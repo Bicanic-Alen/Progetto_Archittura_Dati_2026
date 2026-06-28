@@ -1,0 +1,47 @@
+# ============================================================
+#  LaTeX – file ausiliari generati dalla compilazione
+# ============================================================
+
+# Ausiliari principali
+*.aux
+*.bcf
+*.fdb_latexmk
+*.fls
+*.log
+*.run.xml
+*.synctex.gz
+*.synctex(busy)
+*.toc
+*.lof
+*.lot
+*.out
+*.idx
+*.ind
+*.ilg
+*.glo
+*.gls
+*.glg
+*.acn
+*.acr
+*.alg
+*.ist
+*.bbl
+*.blg
+*.nav
+*.snm
+*.vrb
+*.xdv
+*.dvi
+*.ps
+
+# Cartelle di build
+build/
+out/
+_minted-*/
+
+# ============================================================
+#  File TENUTI su Git (non ignorare)
+# ============================================================
+# .tex  → sorgente principale         (già tracciato)
+# .pdf  → output finale               (già tracciato)
+# .png / .jpg / .jpeg / .svg / ...    (immagini, già tracciate)
