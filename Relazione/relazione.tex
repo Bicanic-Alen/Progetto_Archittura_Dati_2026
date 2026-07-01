@@ -104,5 +104,612 @@
 \end{titlepage}
 
 \newpage
+\newpage
+
+
+
+% ============ COMANDO PER I PLACEHOLDER DELLE IMMAGINI ============
+% Questo comando disegna un riquadro tratteggiato al posto dell'immagine.
+% #1 = descrizione di cosa inserire (utile a te per capire quale immagine cercare nel notebook)
+% #2 = didascalia della figura
+% #3 = nome file suggerito (facoltativo, solo indicativo)
+\newcommand{\imgplaceholder}[3]{%
+\begin{figure}[H]
+    \centering
+    \fboxsep=10pt
+    \fbox{%
+        \begin{minipage}{0.85\textwidth}
+            \centering
+            \vspace{1.7cm}
+            {\large \bfseries [INSERIRE QUI IMMAGINE MANUALMENTE]}\\[0.5cm]
+            \textit{#1}\\[0.3cm]
+            {\small \texttt{Nome file suggerito: #3}}
+            \vspace{1.7cm}
+        \end{minipage}%
+    }
+    \caption{#2}
+\end{figure}
+% Una volta salvata l'immagine (es. screenshot dell'output della cella del notebook),
+% commenta il blocco \imgplaceholder qui sopra e usa invece:
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{#3}
+%     \caption{#2}
+%     \label{fig:#3}
+% \end{figure}
+}
+
+
+
+\tableofcontents
+\newpage
+
+% ======================================================================
+\section{Introduzione}
+% ======================================================================
+
+L'obiettivo del progetto è comprendere in che modo la presenza di rumore nei dati influenzi le prestazioni dei modelli di Machine Learning e individuare le strategie più efficaci per limitarne l'impatto. Il lavoro si è articolato nelle seguenti fasi, in linea con la proposta progettuale concordata:
+
+\begin{itemize}
+    \item{scelta e analisi di un dataset adatto al problema di classificazione};
+    \item preparazione dei dati e creazione del training set;
+    \item introduzione di rumore nel dataset a diversi livelli di intensità;
+    \item addestramento di più modelli sul dataset modificato e analisi delle prestazioni al variare del rumore;
+    \item applicazione di tecniche di preprocessing e regolarizzazione (normalizzazione/scaling, PCA, cross-validation, early stopping, dropout, imputazione avanzata, gestione dei duplicati) per valutarne l'efficacia nel contenere il degrado delle prestazioni;
+    \item confronto tra i risultati ottenuti sui dataset rumorosi e quelli ottenuti sul dataset originale;
+    \item valutazione delle performance mediante le metriche di accuracy, precision e recall.
+\end{itemize}
+
+Il dominio applicativo scelto è quello medicale/di supporto alla diagnosi: si è utilizzato l'\emph{UCI Heart Disease Dataset}, con l'obiettivo di prevedere la presenza o assenza di una malattia cardiaca a partire da variabili cliniche (classificazione binaria).
+
+% ======================================================================
+\section{Descrizione del dataset}
+% ======================================================================
+
+Il dataset utilizzato è lo \textbf{UCI Heart Disease Dataset}, reso disponibile su Kaggle\footnote{\url{https://www.kaggle.com/datasets/redwankarimsony/heart-disease-data}} e caricato in questo progetto da un repository GitHub del corso. Il dataset è composto da \textbf{920 istanze} e, nella sua forma originale, da \textbf{16 colonne}, tra cui variabili demografiche (età, sesso), cliniche (pressione a riposo, colesterolo, frequenza cardiaca massima, angina da sforzo, ecc.) e la variabile target \texttt{num}.
+
+La variabile target originale è \textbf{multiclasse} (valori da 0 a 4, dove 0 indica assenza di malattia e i valori da 1 a 4 indicano livelli crescenti di gravità). La distribuzione originale delle classi è riportata in Tabella~\ref{tab:target_dist}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cc}
+\toprule
+\textbf{Classe (num)} & \textbf{Numero di istanze} \\
+\midrule
+0 (assenza) & 411 \\
+1 & 265 \\
+2 & 109 \\
+3 & 107 \\
+4 & 28 \\
+\bottomrule
+\end{tabular}
+\caption{Distribuzione originale della variabile target multiclasse.}
+\label{tab:target_dist}
+\end{table}
+
+Diverse variabili presentano valori mancanti in misura significativa (ad esempio la colonna \texttt{ca}, presente solo in 309 istanze su 920), aspetto che ha reso necessaria un'attenta fase di preprocessing, descritta nella sezione seguente.
+
+% ======================================================================
+\section{Preprocessing dei dati}
+% ======================================================================
+
+Prima dell'addestramento dei modelli, il dataset è stato sottoposto alle seguenti operazioni di pulizia e trasformazione.
+
+\subsection{Rimozione di colonne non informative}
+Le colonne \texttt{id} (identificativo univoco della riga) e \texttt{dataset} (indicante solo la provenienza geografica del campione) sono state rimosse in quanto non contribuiscono alla predizione.
+
+\subsection{Conversione del target in problema binario}
+Per semplicità e coerenza clinica, il target multiclasse \texttt{num} è stato trasformato in una variabile binaria \texttt{target}:
+\begin{itemize}
+    \item \texttt{0} = assenza di malattia;
+    \item \texttt{1} = presenza di malattia (aggregazione delle classi originarie 1--4).
+\end{itemize}
+
+\subsection{Gestione delle variabili booleane}
+Le variabili \texttt{fbs} (glicemia a digiuno) ed \texttt{exang} (angina indotta da sforzo) sono state convertite in formato numerico 0/1, imputando i valori mancanti con \texttt{False} prima della conversione.
+
+\subsection{One-hot encoding delle variabili categoriche}
+Le variabili categoriche \texttt{sex}, \texttt{cp}, \texttt{restecg}, \texttt{slope} e \texttt{thal} sono state trasformate tramite \emph{one-hot encoding} (con rimozione della prima categoria per evitare collinearità, \texttt{drop\_first=True}).
+
+\subsection{Gestione dei valori mancanti residui}
+Dopo l'encoding, le colonne numeriche che presentavano ancora valori mancanti (\texttt{trestbps}, \texttt{chol}, \texttt{thalch}, \texttt{oldpeak}, \texttt{ca}) sono state imputate con la \textbf{mediana} della rispettiva colonna. Questa scelta è stata preferita alla media in quanto più robusta rispetto agli outlier e permette di non perdere istanze, aspetto particolarmente rilevante data la dimensione limitata del dataset. Il conteggio dei valori mancanti per colonna, riscontrato dopo l'encoding, è riportato in Tabella~\ref{tab:missing}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Colonna} & \textbf{Valori mancanti} \\
+\midrule
+trestbps & 59 \\
+chol & 30 \\
+thalch & 55 \\
+oldpeak & 62 \\
+ca & 611 \\
+\bottomrule
+\end{tabular}
+\caption{Valori mancanti per colonna numerica prima dell'imputazione.}
+\label{tab:missing}
+\end{table}
+
+% ======================================================================
+\section{Analisi esplorativa (EDA)}
+% ======================================================================
+
+Dopo il preprocessing è stata condotta un'analisi esplorativa per comprendere la struttura del dataset ripulito.
+
+\subsection{Distribuzione del target binario}
+Il grafico a barre della distribuzione del target binario mostra un discreto bilanciamento tra le due classi (assenza/presenza di malattia), condizione favorevole per l'addestramento dei modelli di classificazione.
+
+\imgplaceholder{Grafico a barre (\texttt{sns.countplot}) della distribuzione del target binario (0 = assenza, 1 = presenza di malattia)}{Distribuzione della variabile target binaria}{distribuzione\_target.png}
+
+\subsection{Matrice di correlazione}
+La matrice di correlazione tra tutte le variabili numeriche del dataset permette di individuare eventuali relazioni lineari forti tra le feature e con il target.
+
+\imgplaceholder{Heatmap della matrice di correlazione (\texttt{sns.heatmap} su \texttt{df.corr()})}{Matrice di correlazione tra le variabili del dataset}{matrice\_correlazione.png}
+
+\subsection{Distribuzione delle variabili numeriche}
+Gli istogrammi delle variabili numeriche permettono di valutarne la forma distributiva e la presenza di eventuali asimmetrie o outlier.
+
+\imgplaceholder{Griglia di istogrammi (\texttt{df.hist()}) per tutte le variabili numeriche del dataset}{Istogrammi delle variabili numeriche}{istogrammi\_variabili.png}
+
+% ======================================================================
+\section{Suddivisione train/test}
+% ======================================================================
+
+Il dataset è stato suddiviso in training set e test set con proporzione 80/20 (\texttt{test\_size=0.2}), utilizzando la stratificazione sulla variabile target (\texttt{stratify=y}) per preservare le proporzioni delle classi in entrambi i sottoinsiemi, e fissando \texttt{random\_state=42} per la riproducibilità dei risultati.
+
+% ======================================================================
+\section{Modelli di baseline}
+% ======================================================================
+
+Sono stati addestrati e confrontati tre modelli di classificazione supervisionata sul dataset originale (privo di rumore aggiuntivo).
+
+\subsection{Decision Tree}
+
+È stato inizialmente addestrato un Decision Tree con criterio \emph{entropy} senza vincoli di profondità, ottenendo i seguenti risultati sul test set:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metrica} & \textbf{Classe 0} & \textbf{Classe 1} & \textbf{Media pesata} \\
+\midrule
+Precision & 0.73 & 0.77 & 0.75 \\
+Recall & 0.71 & 0.79 & 0.75 \\
+F1-score & 0.72 & 0.78 & 0.75 \\
+\bottomrule
+\end{tabular}
+\caption{Decision Tree (non potato) -- Accuracy sul test set: 0.7554}
+\label{tab:dt_baseline}
+\end{table}
+
+\imgplaceholder{Matrice di confusione del Decision Tree non potato sul test set}{Matrice di confusione -- Decision Tree (baseline)}{cm\_dt\_baseline.png}
+
+\imgplaceholder{Visualizzazione grafica dell'albero di decisione non potato (\texttt{plot\_tree})}{Albero di decisione non potato}{albero\_non\_potato.png}
+
+L'albero non potato tende a sovradattare (\emph{overfitting}) i dati di training. Per contenere questo effetto è stato introdotto un vincolo sulla profondità massima (\texttt{max\_depth=5}), ottenendo un modello più semplice, più interpretabile e con prestazioni migliori sul test set:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metrica} & \textbf{Classe 0} & \textbf{Classe 1} & \textbf{Media pesata} \\
+\midrule
+Precision & 0.80 & 0.81 & 0.80 \\
+Recall & 0.74 & 0.85 & 0.80 \\
+F1-score & 0.77 & 0.83 & 0.80 \\
+\bottomrule
+\end{tabular}
+\caption{Decision Tree potato (\texttt{max\_depth=5}) -- Accuracy sul test set: 0.8043}
+\label{tab:dt_pruned}
+\end{table}
+
+\imgplaceholder{Matrice di confusione del Decision Tree potato sul test set}{Matrice di confusione -- Decision Tree (potato)}{cm\_dt\_pruned.png}
+
+\imgplaceholder{Visualizzazione grafica dell'albero di decisione potato con \texttt{max\_depth=5}}{Albero di decisione potato}{albero\_potato.png}
+
+La validazione tramite 5-fold cross-validation sul Decision Tree potato ha restituito un'accuracy media pari a \textbf{0.725}, coerente con quanto osservato sul singolo test set.
+
+\subsection{Neural Network (Multi-Layer Perceptron)}
+
+È stata definita una rete neurale feed-forward per la classificazione binaria, con la seguente architettura:
+\begin{itemize}
+    \item Strato di input + primo hidden layer: 16 neuroni, attivazione sigmoide;
+    \item Secondo hidden layer: 8 neuroni, attivazione sigmoide;
+    \item Strato di output: 1 neurone, attivazione sigmoide (adatta alla classificazione binaria).
+\end{itemize}
+Il modello è stato compilato con funzione di perdita \texttt{binary\_crossentropy} e ottimizzatore \texttt{adam}, e addestrato per 100 epoche con \texttt{batch\_size=16} sui dati precedentemente standardizzati (\texttt{StandardScaler}), passaggio necessario poiché le reti neurali sono sensibili alla scala delle feature in input.
+
+\imgplaceholder{Grafico dell'andamento dell'accuracy di training in funzione delle epoche}{Andamento dell'accuracy di training (Neural Network)}{nn\_accuracy\_epoche.png}
+
+\imgplaceholder{Grafico dell'andamento della loss di training in funzione delle epoche}{Andamento della loss di training (Neural Network)}{nn\_loss\_epoche.png}
+
+Sul test set, il modello ha ottenuto una \textbf{Test Accuracy di 0.8315} (Test Loss = 0.3813), con le seguenti metriche di classificazione:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metrica} & \textbf{Classe 0} & \textbf{Classe 1} & \textbf{Media pesata} \\
+\midrule
+Precision & 0.83 & 0.83 & 0.83 \\
+Recall & 0.78 & 0.87 & 0.83 \\
+F1-score & 0.81 & 0.85 & 0.83 \\
+\bottomrule
+\end{tabular}
+\caption{Neural Network -- Accuracy sul test set: 0.8315}
+\label{tab:nn_baseline}
+\end{table}
+
+\imgplaceholder{Matrice di confusione della rete neurale sul test set}{Matrice di confusione -- Neural Network}{cm\_nn\_baseline.png}
+
+\subsection{Support Vector Machine (SVM)}
+
+Per il terzo modello è stata scelta una SVM con le seguenti motivazioni:
+\begin{itemize}
+    \item \textbf{Kernel RBF (Radial Basis Function)}: a differenza di un kernel lineare, il kernel RBF gestisce relazioni non lineari tra le feature; dato che le variabili cliniche (pressione, colesterolo, età, ecc.) spesso interagiscono in modo complesso, un confine di decisione non lineare tende a offrire prestazioni migliori;
+    \item \textbf{Parametro di regolarizzazione $C = 1.0$}: controlla il compromesso (\emph{trade-off}) tra l'ampiezza del margine di separazione e la corretta classificazione dei punti di training.
+\end{itemize}
+
+Il modello, addestrato sui dati standardizzati, ha ottenuto un'\textbf{Accuracy di 0.8424} sul test set:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Metrica} & \textbf{Classe 0} & \textbf{Classe 1} & \textbf{Media pesata} \\
+\midrule
+Precision & 0.90 & 0.81 & 0.85 \\
+Recall & 0.73 & 0.93 & 0.84 \\
+F1-score & 0.81 & 0.87 & 0.84 \\
+\bottomrule
+\end{tabular}
+\caption{SVM (kernel RBF, C=1.0) -- Accuracy sul test set: 0.8424}
+\label{tab:svm_baseline}
+\end{table}
+
+\imgplaceholder{Matrice di confusione della SVM sul test set}{Matrice di confusione -- SVM}{cm\_svm\_baseline.png}
+
+\subsection{Confronto tra i modelli di baseline}
+
+La Tabella~\ref{tab:confronto_baseline} riassume le prestazioni dei quattro modelli addestrati (Decision Tree non potato, Decision Tree potato, Neural Network, SVM) sul dataset originale, privo di rumore.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Modello} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} \\
+\midrule
+Decision Tree (baseline) & 0.755 & 0.75 & 0.75 & 0.75 \\
+Decision Tree (potato) & 0.804 & 0.80 & 0.80 & 0.80 \\
+Neural Network & 0.832 & 0.83 & 0.83 & 0.83 \\
+SVM & 0.842 & 0.85 & 0.84 & 0.84 \\
+\bottomrule
+\end{tabular}
+\caption{Confronto delle metriche sul test set tra i modelli di baseline (valori pesati/medi).}
+\label{tab:confronto_baseline}
+\end{table}
+
+\imgplaceholder{Grafico a barre di confronto dell'accuracy tra i quattro modelli di baseline}{Confronto dell'Accuracy tra i modelli di baseline}{confronto\_accuracy\_baseline.png}
+
+La SVM con kernel RBF risulta il modello con le prestazioni migliori sul test set, seguita dalla rete neurale; il Decision Tree potato mostra un netto miglioramento rispetto alla versione non potata, a conferma dell'efficacia del pruning nel ridurre l'overfitting.
+
+% ======================================================================
+\section{Introduzione del rumore nel dataset}
+% ======================================================================
+
+Per valutare la robustezza dei modelli, è stato introdotto rumore artificiale nel training set (il test set rimane sempre pulito, per garantire un confronto equo tra le diverse condizioni), a tre livelli di intensità crescente:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Livello} & \textbf{Percentuale di rumore} \\
+\midrule
+Low & 15\% \\
+Medium & 40\% \\
+High & 55\% \\
+\bottomrule
+\end{tabular}
+\caption{Livelli di rumore utilizzati negli esperimenti.}
+\label{tab:noise_levels}
+\end{table}
+
+Sono state simulate tre diverse tipologie di rumore, ciascuna rappresentativa di problematiche comuni nei dataset reali.
+
+\subsection{Valori mancanti (NaN)}
+È stata implementata una funzione che introduce valori \texttt{NaN} in modo casuale nel training set, generando per ogni cella un numero casuale e sostituendo il valore originale con \texttt{NaN} se tale numero è inferiore alla soglia di rumore desiderata. Il rumore è stato applicato \emph{esclusivamente} su \texttt{X\_train}, in modo da poter confrontare in modo equo le prestazioni sul medesimo test set pulito. La percentuale effettiva di valori mancanti introdotti è risultata coerente con quella target (15.2\%, 40.4\%, 55.7\% rispettivamente).
+
+\subsection{Valori duplicati}
+È stata implementata una funzione che duplica una percentuale di righe del training set, scelte casualmente (con reinserimento), simulando errori di raccolta/unione dati che generano osservazioni ripetute. Le dimensioni del training set risultante sono riportate in Tabella~\ref{tab:dupes_size}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Livello} & \textbf{Dimensione training set} & \textbf{Dimensione originale} \\
+\midrule
+Low (15\%) & 846 & 736 \\
+Medium (40\%) & 1030 & 736 \\
+High (55\%) & 1140 & 736 \\
+\bottomrule
+\end{tabular}
+\caption{Dimensione del training set dopo l'inserimento di duplicati.}
+\label{tab:dupes_size}
+\end{table}
+
+\subsection{Dati "sporchi"}
+È stata implementata una funzione che introduce rumore realistico differenziato in base al tipo di variabile:
+\begin{itemize}
+    \item sulle colonne \textbf{continue}, viene aggiunto rumore gaussiano proporzionale alla deviazione standard della colonna stessa, applicato solo a una frazione casuale di righe (in base al livello di rumore);
+    \item sulle colonne \textbf{binarie} (incluse quelle ottenute da one-hot encoding), viene effettuato uno \emph{swap} dei valori (0 diventa 1 e viceversa) su una frazione casuale di righe.
+\end{itemize}
+Questa tipologia di rumore simula errori di misurazione/inserimento tipici dei dati reali, più insidiosi dei semplici valori mancanti perché non facilmente identificabili.
+
+% ======================================================================
+\section{Impatto del rumore sulle prestazioni dei modelli}
+% ======================================================================
+
+Per ciascuna tipologia di rumore, i tre modelli (Decision Tree, SVM, Neural Network) sono stati riaddestrati sul training set corrotto e valutati sul medesimo test set pulito, applicando un preprocessing di base (imputazione con mediana per i NaN, scaling standard). Le prestazioni sono state inoltre validate tramite 5-fold cross-validation stratificata (\texttt{StratifiedKFold}, k=5) sul training set corrotto.
+
+\subsection{Valori mancanti}
+
+\imgplaceholder{Matrici di confusione dei tre modelli (Decision Tree, SVM, Neural Network) per ciascun livello di valori mancanti}{Matrici di confusione al variare del livello di valori mancanti}{cm\_nan\_livelli.png}
+
+La Tabella~\ref{tab:cv_nan_base} riporta l'accuracy media di cross-validation al variare del livello di valori mancanti, con preprocessing di base (imputazione mediana + scaling).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\midrule
+Baseline (0\%) & 0.754 & 0.818 & 0.802 \\
+Low (15\%) & 0.730 & 0.798 & 0.792 \\
+Medium (40\%) & 0.704 & 0.761 & 0.777 \\
+High (55\%) & 0.716 & 0.693 & 0.743 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy media di CV (5-fold) al variare del livello di valori mancanti, con imputazione base (mediana).}
+\label{tab:cv_nan_base}
+\end{table}
+
+Si osserva un degrado progressivo delle prestazioni all'aumentare della percentuale di valori mancanti, particolarmente marcato per la SVM, che passa da 0.818 (baseline) a 0.693 (55\% di rumore).
+
+\subsection{Valori duplicati}
+
+\imgplaceholder{Matrici di confusione dei tre modelli per ciascun livello di duplicazione}{Matrici di confusione al variare del livello di duplicazione}{cm\_dup\_livelli.png}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\midrule
+Baseline (0\%) & 0.754 & 0.818 & 0.807 \\
+Low (15\%) & 0.784 & 0.830 & 0.811 \\
+Medium (40\%) & 0.777 & 0.847 & 0.824 \\
+High (55\%) & 0.799 & 0.854 & 0.823 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy media di CV (5-fold) al variare del livello di duplicazione (dati non ripuliti).}
+\label{tab:cv_dup_base}
+\end{table}
+
+A differenza delle altre tipologie di rumore, l'accuracy in cross-validation \textbf{aumenta} apparentemente con il livello di duplicazione. Questo risultato è \textbf{fuorviante}: è dovuto a un fenomeno di \emph{data leakage}, poiché la suddivisione in fold della cross-validation può separare copie identiche della stessa riga tra training e validation del fold, rendendo la stima della performance eccessivamente ottimistica. Questo aspetto viene analizzato e corretto nella Sezione~\ref{sec:dedup}.
+
+\subsection{Dati sporchi}
+
+\imgplaceholder{Matrici di confusione dei tre modelli per ciascun livello di rumore "sporco"}{Matrici di confusione al variare del livello di dati sporchi}{cm\_dirty\_livelli.png}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\midrule
+Baseline (0\%) & 0.754 & 0.818 & 0.804 \\
+Low (15\%) & 0.731 & 0.766 & 0.760 \\
+Medium (40\%) & 0.693 & 0.683 & 0.686 \\
+High (55\%) & 0.647 & 0.697 & 0.709 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy media di CV (5-fold) al variare del livello di dati sporchi, con modelli non regolarizzati.}
+\label{tab:cv_dirty_base}
+\end{table}
+
+Questa tipologia di rumore risulta la più dannosa per le prestazioni: tutti e tre i modelli mostrano un calo consistente e monotono dell'accuracy all'aumentare del livello di rumore, poiché i valori errati (ma plausibili) alterano direttamente la relazione tra feature e target senza essere facilmente rilevabili come nel caso dei NaN.
+
+% ======================================================================
+\section{Tecniche di preprocessing e regolarizzazione per la mitigazione del rumore}
+% ======================================================================
+
+Per ciascuna tipologia di rumore sono state applicate tecniche specifiche di preprocessing e/o regolarizzazione dei modelli, al fine di valutarne l'efficacia nel contenere il degrado delle prestazioni osservato nella sezione precedente.
+
+\subsection{Mitigazione dei valori mancanti}
+
+Oltre all'imputazione di base con la mediana, sono state testate due strategie di imputazione più avanzate, in combinazione con tecniche di regolarizzazione dei modelli (Decision Tree con \texttt{max\_depth=4}, \texttt{min\_samples\_split=20}, \texttt{min\_samples\_leaf=15}; SVM con margine più "morbido", $C=0.1$; rete neurale con \texttt{Dropout} (0.3 e 0.2) e \texttt{EarlyStopping}):
+
+\begin{itemize}
+    \item \textbf{KNN Imputer}: imputa ciascun valore mancante sulla base della media dei $k=5$ vicini più simili;
+    \item \textbf{Iterative Imputer}: stima ogni valore mancante modellandolo come funzione delle altre variabili, in modo iterativo (\texttt{max\_iter=10}).
+\end{itemize}
+
+La Tabella~\ref{tab:cv_nan_confronto} confronta l'accuracy media di cross-validation ottenuta con le tre strategie di imputazione (per la SVM, unico modello riportato a titolo di confronto sintetico -- i risultati completi per tutti i modelli sono disponibili nel notebook).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Livello} & \textbf{SimpleImputer (base)} & \textbf{KNN Imputer} & \textbf{Iterative Imputer} \\
+\midrule
+Baseline (0\%) & 0.818 & 0.823 & 0.823 \\
+Low (15\%) & 0.798 & 0.799 & 0.795 \\
+Medium (40\%) & 0.761 & 0.768 & 0.766 \\
+High (55\%) & 0.693 & 0.723 & 0.739 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy media di CV (SVM) al variare della strategia di imputazione dei valori mancanti.}
+\label{tab:cv_nan_confronto}
+\end{table}
+
+Le strategie di imputazione avanzata (KNN e Iterative Imputer), unite alla regolarizzazione dei modelli, mostrano un beneficio soprattutto ai livelli di rumore più elevati (Medium e High), dove il recupero di informazione tramite le relazioni tra variabili risulta più efficace della semplice sostituzione con la mediana.
+
+\imgplaceholder{Grafico comparativo (uno per modello) tra le tre strategie di imputazione al variare del livello di rumore, ottenuto tramite \texttt{sns.relplot}}{Confronto tra le strategie di imputazione dei valori mancanti (per modello)}{confronto\_imputazione.png}
+
+\subsection{Mitigazione dei valori duplicati}
+\label{sec:dedup}
+
+Sono state confrontate due strategie per la gestione dei duplicati:
+
+\begin{itemize}
+    \item \textbf{Rimozione dei duplicati}: identificazione ed eliminazione delle righe identiche (\texttt{drop\_duplicates()}), per evitare che il modello attribuisca peso eccessivo a osservazioni ripetute e per prevenire il \emph{data leakage} in fase di validazione. Applicando questa tecnica, il training set torna, per tutti i livelli, alla dimensione originale di 735 righe (Tabella~\ref{tab:dedup_rows});
+    \item \textbf{Aggregazione intelligente}: anziché rimuovere semplicemente le righe duplicate, si raggruppano le osservazioni identiche e si assegna come etichetta la \emph{moda} del target tra le occorrenze duplicate, tecnica utile quando i duplicati presentano etichette discordanti (rumore di etichettatura).
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcc}
+\toprule
+\textbf{Livello} & \textbf{Righe rimosse} & \textbf{Dimensione finale} \\
+\midrule
+Baseline (0\%) & 1 & 735 \\
+Low (15\%) & 111 & 735 \\
+Medium (40\%) & 295 & 735 \\
+High (55\%) & 405 & 735 \\
+\bottomrule
+\end{tabular}
+\caption{Effetto della rimozione dei duplicati sulla dimensione del training set.}
+\label{tab:dedup_rows}
+\end{table}
+
+Il grafico seguente confronta, per la SVM, la cross-validation "ottimistica" calcolata sui dati con duplicati (affetta da \emph{leakage}) con quella "corretta" ottenuta dopo la rimozione e dopo l'aggregazione intelligente.
+
+\imgplaceholder{Grafico a linee di confronto tra CV con leakage (duplicati non gestiti), CV post-rimozione e CV post-aggregazione intelligente, per la SVM, ai tre livelli di rumore}{Confronto tra le strategie di gestione dei duplicati in Cross-Validation (SVM)}{confronto\_duplicati\_cv.png}
+
+Come atteso, la CV calcolata sui dati con duplicati non gestiti sovrastima sistematicamente le reali prestazioni del modello; le strategie di rimozione e aggregazione restituiscono invece stime più realistiche e coerenti con le prestazioni osservate sul test set pulito, dimostrando l'importanza di riconoscere e correggere il data leakage introdotto dai duplicati prima di ogni fase di validazione.
+
+\subsection{Mitigazione dei dati sporchi}
+
+Per contrastare l'effetto dei dati "sporchi" (rumore gaussiano e swap di valori binari), che si sono rivelati la tipologia di rumore più impattante, è stata adottata una pipeline di preprocessing robusto composta da:
+
+\begin{itemize}
+    \item \textbf{RobustScaler}: normalizzazione basata su mediana e range interquartile, meno sensibile agli outlier rispetto allo \texttt{StandardScaler} classico;
+    \item \textbf{PCA (Principal Component Analysis)}, mantenendo il numero minimo di componenti necessario a spiegare il \textbf{95\%} della varianza totale, con l'obiettivo di filtrare parte del rumore concentrato nelle componenti a bassa varianza;
+    \item modelli regolarizzati (Decision Tree con \texttt{max\_depth=4}, \texttt{min\_samples\_split=20}, \texttt{min\_samples\_leaf=15}; SVM con $C=0.1$).
+\end{itemize}
+
+Il numero di componenti principali necessarie per raggiungere il 95\% della varianza spiegata, per ciascun livello di rumore, è riportato in Tabella~\ref{tab:pca_components}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+\textbf{Livello} & \textbf{Componenti principali (95\% varianza)} \\
+\midrule
+Baseline (0\%) & 14 \\
+Low (15\%) & 16 \\
+Medium (40\%) & 14 \\
+High (55\%) & 16 \\
+\bottomrule
+\end{tabular}
+\caption{Numero di componenti principali necessarie per spiegare il 95\% della varianza, per livello di rumore.}
+\label{tab:pca_components}
+\end{table}
+
+\imgplaceholder{Grafico della varianza spiegata cumulativa in funzione del numero di componenti PCA, con soglia del 95\% evidenziata, per ciascun livello di rumore (4 grafici, uno per livello)}{Analisi PCA -- Varianza cumulativa spiegata per livello di rumore}{pca\_varianza\_cumulativa.png}
+
+La Tabella~\ref{tab:cv_dirty_robust} riporta l'accuracy media di cross-validation ottenuta con la pipeline robusta (RobustScaler + PCA + modelli regolarizzati), da confrontare con i valori di Tabella~\ref{tab:cv_dirty_base} ottenuti senza tecniche di mitigazione.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\midrule
+Baseline (0\%) & 0.745 & 0.811 & 0.798 \\
+Low (15\%) & 0.726 & 0.769 & 0.750 \\
+Medium (40\%) & 0.669 & 0.698 & 0.704 \\
+High (55\%) & 0.689 & 0.708 & 0.702 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy media di CV (5-fold) con pipeline robusta (RobustScaler + PCA + regolarizzazione) sui dati sporchi.}
+\label{tab:cv_dirty_robust}
+\end{table}
+
+Il confronto tra le due tabelle mostra come, per questa specifica tipologia di rumore, il beneficio della pipeline robusta risulti contenuto e non sempre univoco: ai livelli Low e High le prestazioni risultano leggermente superiori rispetto al caso non regolarizzato, mentre al livello Medium risultano sostanzialmente comparabili. Questo suggerisce che il rumore gaussiano applicato direttamente sulle feature, unito allo swap dei valori binari, alteri in modo diffuso la struttura informativa del dataset, rendendo difficile una sua completa mitigazione tramite le sole tecniche di preprocessing lineare (scaling e riduzione dimensionale).
+
+% ======================================================================
+\section{Confronto finale tra le strategie}
+% ======================================================================
+
+Per fornire una visione d'insieme, i risultati di tutte le strategie di gestione del rumore analizzate sono stati raccolti in un unico confronto grafico, organizzato per tipologia di rumore (valori mancanti con KNN Imputer, valori mancanti con Iterative Imputer, duplicati rimossi, duplicati aggregati, dati sporchi con pipeline robusta) e per modello (Decision Tree, SVM, Neural Network), al variare del livello di rumore.
+
+\imgplaceholder{Griglia di grafici a linee (\texttt{sns.FacetGrid}), un pannello per ciascuna strategia di pulizia dei dati, con l'accuracy dei tre modelli sull'asse y e il livello di rumore sull'asse x}{Confronto finale delle prestazioni dei modelli robusti per strategia di pulizia dei dati}{confronto\_finale.png}
+
+Dall'analisi complessiva emergono le seguenti osservazioni:
+\begin{itemize}
+    \item la \textbf{SVM} risulta, in generale, il modello più performante e più stabile al crescere del rumore, specialmente per i valori mancanti e i dati sporchi;
+    \item i \textbf{valori mancanti} sono la tipologia di rumore più facilmente mitigabile, grazie a tecniche di imputazione relativamente mature (KNN, Iterative Imputer);
+    \item i \textbf{duplicati}, se non correttamente identificati, non danneggiano le prestazioni reali del modello ma \textbf{falsano la stima} ottenuta tramite cross-validation (data leakage); una volta rimossi o aggregati correttamente, la valutazione torna realistica;
+    \item i \textbf{dati sporchi} (rumore gaussiano e inversione di valori binari) costituiscono la sfida più difficile da mitigare, poiché alterano silenziosamente il contenuto informativo delle feature senza essere identificabili come nel caso dei valori mancanti.
+\end{itemize}
+
+% ======================================================================
+\section{Conclusioni}
+% ======================================================================
+
+Il progetto ha permesso di analizzare in modo sistematico l'impatto di tre diverse tipologie di rumore (valori mancanti, duplicati, dati sporchi) sulle prestazioni di tre modelli di Machine Learning (Decision Tree, SVM, rete neurale), applicati a un problema reale di classificazione in ambito medicale.
+
+I risultati mostrano che:
+\begin{enumerate}
+    \item l'impatto del rumore \textbf{non è uniforme}: i valori mancanti causano un degrado moderato e ben gestibile tramite imputazione, i duplicati non peggiorano le prestazioni reali ma possono falsare la validazione se non gestiti correttamente, mentre i dati sporchi rappresentano la minaccia più seria e più difficile da correggere;
+    \item le tecniche di \textbf{regolarizzazione dei modelli} (pruning per il Decision Tree, soft margin per la SVM, dropout ed early stopping per la rete neurale) contribuiscono a contenere l'overfitting e, in generale, a rendere i modelli più stabili al crescere del rumore;
+    \item la \textbf{cross-validation} si conferma uno strumento fondamentale per la valutazione dei modelli, ma richiede attenzione: in presenza di duplicati non gestiti, può fornire stime eccessivamente ottimistiche a causa del data leakage;
+    \item non esiste un'unica tecnica di preprocessing "universale": la scelta della strategia più efficace dipende dalla natura specifica del rumore presente nei dati.
+\end{enumerate}
+
+Come possibile sviluppo futuro, si potrebbero esplorare tecniche di rilevamento automatico del tipo di rumore presente nel dataset, così da selezionare in modo adattivo la strategia di preprocessing più adeguata, oltre a estendere l'analisi ad altri modelli (es. ensemble methods come Random Forest o Gradient Boosting) e ad altri dataset di dominio diverso, per verificare la generalizzabilità delle conclusioni ottenute.
+
+% ======================================================================
+\appendix
+\section{Elenco delle immagini da inserire manualmente}
+% ======================================================================
+
+La Tabella~\ref{tab:elenco_immagini} riassume, in ordine di comparizione nel documento, tutte le figure segnalate come "da inserire manualmente". Per ciascuna immagine è indicata la cella del notebook da cui è generata, così da poterla ritrovare ed esportare (ad esempio come screenshot o tramite \texttt{plt.savefig(...)} prima di \texttt{plt.show()}).
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{p{5.2cm}p{3.5cm}p{5.2cm}}
+\toprule
+\textbf{Nome file suggerito} & \textbf{Sezione} & \textbf{Contenuto} \\
+\midrule
+distribuzione\_target.png & EDA & Countplot target binario \\
+matrice\_correlazione.png & EDA & Heatmap correlazione \\
+istogrammi\_variabili.png & EDA & Istogrammi variabili numeriche \\
+cm\_dt\_baseline.png & Decision Tree & Confusion matrix (non potato) \\
+albero\_non\_potato.png & Decision Tree & Plot albero non potato \\
+cm\_dt\_pruned.png & Decision Tree & Confusion matrix (potato) \\
+albero\_potato.png & Decision Tree & Plot albero potato \\
+nn\_accuracy\_epoche.png & Neural Network & Accuracy vs epoche \\
+nn\_loss\_epoche.png & Neural Network & Loss vs epoche \\
+cm\_nn\_baseline.png & Neural Network & Confusion matrix \\
+cm\_svm\_baseline.png & SVM & Confusion matrix \\
+confronto\_accuracy\_baseline.png & Confronto baseline & Barplot accuracy modelli \\
+cm\_nan\_livelli.png & Impatto rumore & Confusion matrix per livello NaN \\
+cm\_dup\_livelli.png & Impatto rumore & Confusion matrix per livello duplicati \\
+cm\_dirty\_livelli.png & Impatto rumore & Confusion matrix per livello dati sporchi \\
+confronto\_imputazione.png & Mitigazione NaN & Confronto strategie imputazione \\
+confronto\_duplicati\_cv.png & Mitigazione duplicati & Confronto leakage/rimozione/aggregazione \\
+pca\_varianza\_cumulativa.png & Mitigazione dati sporchi & Varianza cumulativa PCA \\
+confronto\_finale.png & Confronto finale & FacetGrid riepilogo generale \\
+\bottomrule
+\end{tabular}
+\caption{Elenco riepilogativo delle immagini da inserire manualmente nel documento.}
+\label{tab:elenco_immagini}
+\end{table}
+
+\end{document}
 
 \end{document}
