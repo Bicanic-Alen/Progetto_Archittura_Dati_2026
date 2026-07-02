@@ -572,6 +572,7 @@ High (55\%) & 1140 & 736 \\
 Questa tipologia di rumore simula errori di misurazione/inserimento tipici dei dati reali, più insidiosi dei semplici valori mancanti perché non facilmente identificabili.
 
 % ======================================================================
+\newpage
 \section{Impatto del rumore sulle prestazioni dei modelli}
 % ======================================================================
 
@@ -603,7 +604,12 @@ Si osserva un degrado progressivo delle prestazioni all'aumentare della percentu
 
 \subsection{Valori duplicati}
 
-\imgplaceholder{Matrici di confusione dei tre modelli per ciascun livello di duplicazione}{Matrici di confusione al variare del livello di duplicazione}{cm\_dup\_livelli.png}
+\begin{figure}[H]
+            \centering
+            \includegraphics[width=1\textwidth]{cm_dup_livelli.jpg} 
+            \caption{Confronto dell’Accuracy tra i modelli di baseline}
+    \label{fig:cm_dup_livelli}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -688,8 +694,8 @@ Le strategie di imputazione avanzata (KNN e Iterative Imputer), unite alla regol
 Sono state confrontate due strategie per la gestione dei duplicati:
 
 \begin{itemize}
-    \item \textbf{Rimozione dei duplicati}: identificazione ed eliminazione delle righe identiche (\texttt{drop\_duplicates()}), per evitare che il modello attribuisca peso eccessivo a osservazioni ripetute e per prevenire il \emph{data leakage} in fase di validazione. Applicando questa tecnica, il training set torna, per tutti i livelli, alla dimensione originale di 735 righe (Tabella~\ref{tab:dedup_rows});
-    \item \textbf{Aggregazione intelligente}: anziché rimuovere semplicemente le righe duplicate, si raggruppano le osservazioni identiche e si assegna come etichetta la \emph{moda} del target tra le occorrenze duplicate, tecnica utile quando i duplicati presentano etichette discordanti (rumore di etichettatura).
+    \item \textbf{Rimozione dei duplicati}: identificazione ed eliminazione delle righe identiche (\texttt{drop\_duplicates()}), per evitare che il modello attribuisca peso eccessivo a osservazioni ripetute e per prevenire il \emph{data leakage} in fase di validazione. Applicando questa tecnica, il training set torna, per tutti i livelli, all'esatta dimensione originale di 735 righe (Tabella~\ref{tab:dedup_rows});
+    \item \textbf{Aggregazione intelligente}: anziché rimuovere semplicemente le righe duplicate, si raggruppano le osservazioni identiche e si assegna come etichetta la \emph{moda} del target tra le occorrenze duplicate. Questa tecnica risulta particolarmente utile quando i duplicati presentano etichette discordanti (rumore di etichettatura).
 \end{itemize}
 
 \begin{table}[H]
@@ -698,7 +704,7 @@ Sono state confrontate due strategie per la gestione dei duplicati:
 \toprule
 \textbf{Livello} & \textbf{Righe rimosse} & \textbf{Dimensione finale} \\
 \midrule
-Baseline (0\%) & 1 & 735 \\
+Baseline (0\%) & 0 & 735 \\
 Low (15\%) & 111 & 735 \\
 Medium (40\%) & 295 & 735 \\
 High (55\%) & 405 & 735 \\
@@ -708,11 +714,19 @@ High (55\%) & 405 & 735 \\
 \label{tab:dedup_rows}
 \end{table}
 
-Il grafico seguente confronta, per la SVM, la cross-validation "ottimistica" calcolata sui dati con duplicati (affetta da \emph{leakage}) con quella "corretta" ottenuta dopo la rimozione e dopo l'aggregazione intelligente.
+Il grafico seguente confronta l'accuratezza media ottenuta tramite Cross-Validation (5-Fold) sui dati grezzi con duplicati rispetto a quella ottenuta applicando le strategie di pulizia. 
 
-\imgplaceholder{Grafico a linee di confronto tra CV con leakage (duplicati non gestiti), CV post-rimozione e CV post-aggregazione intelligente, per la SVM, ai tre livelli di rumore}{Confronto tra le strategie di gestione dei duplicati in Cross-Validation (SVM)}{confronto\_duplicati\_cv.png}
+\begin{figure}[H]
+            \centering
+            % Assicurati di salvare il nuovo grafico con questo nome nella tua cartella immagini
+            \includegraphics[width=1\textwidth]{confronto_cv_dup_pre_post.png} 
+            \caption{Confronto tra le strategie di gestione dei duplicati in Cross-Validation per i tre modelli analizzati.}
+    \label{fig:confronto_cv_dup_pre_post}
+\end{figure}
 
-Come atteso, la CV calcolata sui dati con duplicati non gestiti sovrastima sistematicamente le reali prestazioni del modello; le strategie di rimozione e aggregazione restituiscono invece stime più realistiche e coerenti con le prestazioni osservate sul test set pulito, dimostrando l'importanza di riconoscere e correggere il data leakage introdotto dai duplicati prima di ogni fase di validazione.
+Come si evince dalla Figura~\ref{fig:confronto_cv_dup_pre_post}, la valutazione sui dati non trattati (linea tratteggiata rossa) soffre di un evidente fenomeno di \emph{data leakage}. All'aumentare della percentuale di duplicati, l'accuratezza della Cross-Validation aumenta fittiziamente (visibile in particolare nei modelli più complessi come la SVM e le Reti Neurali). Questo accade perché le stesse osservazioni finiscono per essere presenti simultaneamente sia nei fold di addestramento che in quello di validazione, permettendo al modello di riconoscere pattern già visti anziché generalizzare su dati nuovi.
+
+Al contrario, le strategie di rimozione e aggregazione restituiscono stime affidabili e non distorte. Poiché entrambe le tecniche riescono a identificare e neutralizzare completamente le righe ridondanti — riconducendo il training set all'esatta composizione della Baseline originale (Tabella~\ref{tab:dedup_rows}) — le curve di accuratezza post-regolarizzazione risultano perfettamente piatte e costanti al variare del livello di duplicazione iniziale. Questo andamento dimostra matematicamente l'efficacia della pulizia e la necessità di gestire i duplicati \emph{prima} di qualsiasi fase di validazione.
 
 \subsection{Mitigazione dei dati sporchi}
 
@@ -770,13 +784,19 @@ Il confronto tra le due tabelle mostra come, per questa specifica tipologia di r
 
 Per fornire una visione d'insieme, i risultati di tutte le strategie di gestione del rumore analizzate sono stati raccolti in un unico confronto grafico, organizzato per tipologia di rumore (valori mancanti con KNN Imputer, valori mancanti con Iterative Imputer, duplicati rimossi, duplicati aggregati, dati sporchi con pipeline robusta) e per modello (Decision Tree, SVM, Neural Network), al variare del livello di rumore.
 
-\imgplaceholder{Griglia di grafici a linee (\texttt{sns.FacetGrid}), un pannello per ciascuna strategia di pulizia dei dati, con l'accuracy dei tre modelli sull'asse y e il livello di rumore sull'asse x}{Confronto finale delle prestazioni dei modelli robusti per strategia di pulizia dei dati}{confronto\_finale.png}
+\begin{figure}[H]
+            \centering
+            \includegraphics[width=1\textwidth]{confronto_finale.png} 
+            \caption{Confronto finale delle prestazioni dei modelli robusti per strategia
+di pulizia dei dati}
+    \label{fig:confronto_finale}
+\end{figure}
 
 Dall'analisi complessiva emergono le seguenti osservazioni:
 \begin{itemize}
     \item la \textbf{SVM} risulta, in generale, il modello più performante e più stabile al crescere del rumore, specialmente per i valori mancanti e i dati sporchi;
     \item i \textbf{valori mancanti} sono la tipologia di rumore più facilmente mitigabile, grazie a tecniche di imputazione relativamente mature (KNN, Iterative Imputer);
-    \item i \textbf{duplicati}, se non correttamente identificati, non danneggiano le prestazioni reali del modello ma \textbf{falsano la stima} ottenuta tramite cross-validation (data leakage); una volta rimossi o aggregati correttamente, la valutazione torna realistica;
+    \item i \textbf{duplicati}, se non correttamente identificati, non alterano necessariamente il potere predittivo del modello sul test set, ma \textbf{falsano sistematicamente la stima} delle prestazioni in fase di addestramento (data leakage); l'applicazione di strategie di rimozione o aggregazione ripristina la correttezza della validazione, garantendo una valutazione delle prestazioni coerente con la baseline originale;
     \item i \textbf{dati sporchi} (rumore gaussiano e inversione di valori binari) costituiscono la sfida più difficile da mitigare, poiché alterano silenziosamente il contenuto informativo delle feature senza essere identificabili come nel caso dei valori mancanti.
 \end{itemize}
 
@@ -788,51 +808,17 @@ Il progetto ha permesso di analizzare in modo sistematico l'impatto di tre diver
 
 I risultati mostrano che:
 \begin{enumerate}
-    \item l'impatto del rumore \textbf{non è uniforme}: i valori mancanti causano un degrado moderato e ben gestibile tramite imputazione, i duplicati non peggiorano le prestazioni reali ma possono falsare la validazione se non gestiti correttamente, mentre i dati sporchi rappresentano la minaccia più seria e più difficile da correggere;
+    \item l'impatto del rumore \textbf{non è uniforme}: i valori mancanti causano un degrado moderato gestibile tramite imputazione; i duplicati rappresentano una minaccia subdola poiché, pur non degradando direttamente il modello, \textbf{inquinano il processo di validazione}, portando a una sovrastima delle performance; i dati sporchi, infine, costituiscono la sfida più complessa poiché compromettono silenziosamente l'integrità del segnale informativo;
     \item le tecniche di \textbf{regolarizzazione dei modelli} (pruning per il Decision Tree, soft margin per la SVM, dropout ed early stopping per la rete neurale) contribuiscono a contenere l'overfitting e, in generale, a rendere i modelli più stabili al crescere del rumore;
-    \item la \textbf{cross-validation} si conferma uno strumento fondamentale per la valutazione dei modelli, ma richiede attenzione: in presenza di duplicati non gestiti, può fornire stime eccessivamente ottimistiche a causa del data leakage;
+    \item la \textbf{cross-validation} si conferma uno strumento fondamentale, ma richiede estrema attenzione: \textbf{la presenza di duplicati nel training set agisce come una forma di data leakage}, fornendo stime di accuratezza eccessivamente ottimistiche che non trovano riscontro sul test set;
     \item non esiste un'unica tecnica di preprocessing "universale": la scelta della strategia più efficace dipende dalla natura specifica del rumore presente nei dati.
 \end{enumerate}
 
 Come possibile sviluppo futuro, si potrebbero esplorare tecniche di rilevamento automatico del tipo di rumore presente nel dataset, così da selezionare in modo adattivo la strategia di preprocessing più adeguata, oltre a estendere l'analisi ad altri modelli (es. ensemble methods come Random Forest o Gradient Boosting) e ad altri dataset di dominio diverso, per verificare la generalizzabilità delle conclusioni ottenute.
 
-% ======================================================================
-\appendix
-\section{Elenco delle immagini da inserire manualmente}
-% ======================================================================
+\bigbreak
 
-La Tabella~\ref{tab:elenco_immagini} riassume, in ordine di comparizione nel documento, tutte le figure segnalate come "da inserire manualmente". Per ciascuna immagine è indicata la cella del notebook da cui è generata, così da poterla ritrovare ed esportare (ad esempio come screenshot o tramite \texttt{plt.savefig(...)} prima di \texttt{plt.show()}).
+In conclusione, il lavoro mostra come la qualità dei dati sia determinante almeno quanto la scelta del modello di Machine Learning: una corretta gestione del rumore può incidere sulle prestazioni tanto quanto la scelta dell'algoritmo.
 
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{p{5.2cm}p{3.5cm}p{5.2cm}}
-\toprule
-\textbf{Nome file suggerito} & \textbf{Sezione} & \textbf{Contenuto} \\
-\midrule
-distribuzione\_target.png & EDA & Countplot target binario \\
-matrice\_correlazione.png & EDA & Heatmap correlazione \\
-istogrammi\_variabili.png & EDA & Istogrammi variabili numeriche \\
-cm\_dt\_baseline.png & Decision Tree & Confusion matrix (non potato) \\
-albero\_non\_potato.png & Decision Tree & Plot albero non potato \\
-cm\_dt\_pruned.png & Decision Tree & Confusion matrix (potato) \\
-albero\_potato.png & Decision Tree & Plot albero potato \\
-nn\_accuracy\_epoche.png & Neural Network & Accuracy vs epoche \\
-nn\_loss\_epoche.png & Neural Network & Loss vs epoche \\
-cm\_nn\_baseline.png & Neural Network & Confusion matrix \\
-cm\_svm\_baseline.png & SVM & Confusion matrix \\
-confronto\_accuracy\_baseline.png & Confronto baseline & Barplot accuracy modelli \\
-cm\_nan\_livelli.png & Impatto rumore & Confusion matrix per livello NaN \\
-cm\_dup\_livelli.png & Impatto rumore & Confusion matrix per livello duplicati \\
-cm\_dirty\_livelli.png & Impatto rumore & Confusion matrix per livello dati sporchi \\
-confronto\_imputazione.png & Mitigazione NaN & Confronto strategie imputazione \\
-confronto\_duplicati\_cv.png & Mitigazione duplicati & Confronto leakage/rimozione/aggregazione \\
-pca\_varianza\_cumulativa.png & Mitigazione dati sporchi & Varianza cumulativa PCA \\
-confronto\_finale.png & Confronto finale & FacetGrid riepilogo generale \\
-\bottomrule
-\end{tabular}
-\caption{Elenco riepilogativo delle immagini da inserire manualmente nel documento.}
-\label{tab:elenco_immagini}
-\end{table}
 
 \end{document}
