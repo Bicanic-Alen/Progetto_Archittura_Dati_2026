@@ -7,23 +7,18 @@
 \usepackage{amsmath}
 \usepackage[style=numeric,backend=biber]{biblatex}
 \addbibresource{bibliografia.bib}
-\geometry{a4paper, top=2.2cm, bottom=2.2cm, left=1.8cm, right=1.8cm}
 \setlength{\parindent}{0pt}
 \usepackage{xcolor}
 \usepackage[table]{xcolor}
 \usepackage{listings}
-\usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning}
 \usepackage{multicol}
 \usepackage{tikz}
 \usetikzlibrary{calc}
-\usepackage{amsmath}
 
 
 % --- TRUCCO PER GLI SPAZI INVISIBILI DEL COPIA-INCOLLA ---
 \DeclareUnicodeCharacter{00A0}{ } 
 
-\addbibresource{bibliografia.bib}
 \geometry{a4paper, top=2.5cm, bottom=2.5cm, left=3.5cm, right=3.5cm}
 \setlength{\parindent}{0pt}
 
@@ -58,6 +53,9 @@
     tabsize=2,
     showstringspaces=false 
 }
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
 
 \begin{document}
 
@@ -163,10 +161,11 @@ L'obiettivo del progetto è comprendere in che modo la presenza di rumore nei da
 Il dominio applicativo scelto è quello medicale/di supporto alla diagnosi: si è utilizzato l'\emph{UCI Heart Disease Dataset}, con l'obiettivo di prevedere la presenza o assenza di una malattia cardiaca a partire da variabili cliniche (classificazione binaria).
 
 % ======================================================================
+\newpage
 \section{Descrizione del dataset}
 % ======================================================================
 
-Il dataset utilizzato è lo \textbf{UCI Heart Disease Dataset}, reso disponibile su Kaggle\footnote{\url{https://www.kaggle.com/datasets/redwankarimsony/heart-disease-data}} e caricato in questo progetto da un repository GitHub del corso. Il dataset è composto da \textbf{920 istanze} e, nella sua forma originale, da \textbf{16 colonne}, tra cui variabili demografiche (età, sesso), cliniche (pressione a riposo, colesterolo, frequenza cardiaca massima, angina da sforzo, ecc.) e la variabile target \texttt{num}.
+Il dataset utilizzato è lo \textbf{UCI Heart Disease Dataset}, reso disponibile su GitHub\footnote{\url{https://raw.githubusercontent.com/Bicanic-Alen/Progetto_Archittura_Dati_2026/refs/heads/master/heart_disease_uci.csv}} e caricato in questo progetto da un repository GitHub del corso. Il dataset è composto da \textbf{920 istanze} e, nella sua forma originale, da \textbf{16 colonne}, tra cui variabili demografiche (età, sesso), cliniche (pressione a riposo, colesterolo, frequenza cardiaca massima, angina da sforzo, ecc.) e la variabile target \texttt{num}.
 
 La variabile target originale è \textbf{multiclasse} (valori da 0 a 4, dove 0 indica assenza di malattia e i valori da 1 a 4 indicano livelli crescenti di gravità). La distribuzione originale delle classi è riportata in Tabella~\ref{tab:target_dist}.
 
@@ -189,7 +188,45 @@ La variabile target originale è \textbf{multiclasse} (valori da 0 a 4, dove 0 i
 
 Diverse variabili presentano valori mancanti in misura significativa (ad esempio la colonna \texttt{ca}, presente solo in 309 istanze su 920), aspetto che ha reso necessaria un'attenta fase di preprocessing, descritta nella sezione seguente.
 
+
+{\small
+\begin{itemize}
+    \item \textbf{id}: identificatore univoco del paziente.
+    \item \textbf{age}: età del paziente espressa in anni.
+    \item \textbf{origin (dataset)}: luogo di provenienza dello studio clinico.
+    \item \textbf{sex}: sesso del paziente (Male/Female).
+    \item \textbf{cp (chest pain type)}: tipologia di dolore toracico, con le seguenti modalità:
+    \begin{itemize}
+        \item typical angina
+        \item atypical angina
+        \item non-anginal pain
+        \item asymptomatic
+    \end{itemize}
+    \item \textbf{trestbps}: pressione arteriosa a riposo (in mm Hg) misurata al momento del ricovero.
+    \item \textbf{chol}: livello di colesterolo (mg/dl).
+    \item \textbf{fbs (fasting blood sugar)}: indica se la glicemia a digiuno è superiore a 120 mg/dl (True/False).
+    \newpage \item  \textbf{restecg}: risultati dell’elettrocardiogramma a riposo:
+    \begin{itemize}
+        \item normal
+        \item ST-T wave abnormality
+        \item left ventricular hypertrophy
+    \end{itemize}
+    \item \textbf{thalach (maximum heart rate achieved)}: frequenza cardiaca massima raggiunta durante il test.
+    \item \textbf{exang}: presenza di angina indotta dall’esercizio fisico (True/False).
+    \item \textbf{oldpeak}: depressione del tratto ST indotta dall’esercizio rispetto alla condizione di riposo.
+    \item \textbf{slope}: pendenza del segmento ST al picco dell’esercizio.
+    \item \textbf{ca}: numero di vasi principali (0–3) colorati tramite fluoroscopia.
+    \item \textbf{thal}: risultato del test al tallio:
+    \begin{itemize}
+        \item normal
+        \item fixed defect
+        \item reversible defect
+    \end{itemize}
+    \item \textbf{num}: variabile target originale, che indica la presenza e la severità della malattia cardiaca.
+\end{itemize}
+}
 % ======================================================================
+\newpage
 \section{Preprocessing dei dati}
 % ======================================================================
 
@@ -231,7 +268,15 @@ ca & 611 \\
 \label{tab:missing}
 \end{table}
 
+\subsection{Scaling delle feature}
+
+Le variabili numeriche sono state normalizzate/scalate (StandardScaler) per
+garantire che feature con scale di grandezza diverse (es. colesterolo vs età) non
+sbilanciassero il peso durante l'addestramento, passaggio essenziale soprattutto per la Rete
+Neurale.
+
 % ======================================================================
+\newpage
 \section{Analisi esplorativa (EDA)}
 % ======================================================================
 
@@ -240,19 +285,51 @@ Dopo il preprocessing è stata condotta un'analisi esplorativa per comprendere l
 \subsection{Distribuzione del target binario}
 Il grafico a barre della distribuzione del target binario mostra un discreto bilanciamento tra le due classi (assenza/presenza di malattia), condizione favorevole per l'addestramento dei modelli di classificazione.
 
-\imgplaceholder{Grafico a barre (\texttt{sns.countplot}) della distribuzione del target binario (0 = assenza, 1 = presenza di malattia)}{Distribuzione della variabile target binaria}{distribuzione\_target.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{distribuzione_target.png} 
+            \caption{Distribuzione della variabile target binaria.}
+    \label{fig:distribuzione_target}
+\end{figure}
 
+\newpage
 \subsection{Matrice di correlazione}
 La matrice di correlazione tra tutte le variabili numeriche del dataset permette di individuare eventuali relazioni lineari forti tra le feature e con il target.
 
-\imgplaceholder{Heatmap della matrice di correlazione (\texttt{sns.heatmap} su \texttt{df.corr()})}{Matrice di correlazione tra le variabili del dataset}{matrice\_correlazione.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=1\textwidth]{matrice_correlazione.png} 
+            \caption{Matrice di correlazione tra le variabili del dataset}
+    \label{fig:matrice_correlazione}
+\end{figure}
+
+Dall'analisi esplorativa dei dati riportata nel notebook, è emerso attraverso la matrice di
+correlazione che variabili come il tipo di dolore toracico (cp) e la frequenza cardiaca
+massima (thalach) mostrano una correlazione positiva con la presenza della malattia. Al
+contrario, variabili come oldpeak mostrano una correlazione negativa. Inoltre, i grafici di
+distribuzione hanno evidenziato come l'età sia un fattore di rischio distribuito
+prevalentemente nella fascia over-50.
+
+\newpage
 
 \subsection{Distribuzione delle variabili numeriche}
 Gli istogrammi delle variabili numeriche permettono di valutarne la forma distributiva e la presenza di eventuali asimmetrie o outlier.
 
-\imgplaceholder{Griglia di istogrammi (\texttt{df.hist()}) per tutte le variabili numeriche del dataset}{Istogrammi delle variabili numeriche}{istogrammi\_variabili.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=1\textwidth]{istrogrammi_variabili.png} 
+            \caption{Istogrammi delle variabili numeriche}
+    \label{fig:istrogrammi_variabili}
+\end{figure}
+
+Gli istogrammi delle variabili numeriche mostrano distribuzioni non gaussiane e la presenza
+di asimmetrie, rafforzando la scelta della mediana come strategia di imputazione.
+I risultati dell’analisi esplorativa hanno fornito indicazioni fondamentali per le successive
+scelte di preprocessing, in particolare per la gestione dei valori mancanti, la codifica delle
+variabili categoriche e l’applicazione dello scaling delle feature.
 
 % ======================================================================
+\newpage
 \section{Suddivisione train/test}
 % ======================================================================
 
@@ -283,10 +360,22 @@ F1-score & 0.72 & 0.78 & 0.75 \\
 \label{tab:dt_baseline}
 \end{table}
 
-\imgplaceholder{Matrice di confusione del Decision Tree non potato sul test set}{Matrice di confusione -- Decision Tree (baseline)}{cm\_dt\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_decision_tree_not_pruned_baseline.png} 
+            \caption{Matrice di confusione -- Decision Tree (baseline)}
+    \label{fig:cm_decision_tree_not_pruned_baseline}
+\end{figure}
 
-\imgplaceholder{Visualizzazione grafica dell'albero di decisione non potato (\texttt{plot\_tree})}{Albero di decisione non potato}{albero\_non\_potato.png}
 
+\begin{figure}[H]
+            \centering
+            \includegraphics[width=1\textwidth]{decision_tree_not_pruned_baseline.png} 
+            \caption{Albero di decisione non potato}
+    \label{fig:decision_tree_not_pruned_baseline}
+\end{figure}
+
+\subsubsection{Decision Tree - Pruned}
 L'albero non potato tende a sovradattare (\emph{overfitting}) i dati di training. Per contenere questo effetto è stato introdotto un vincolo sulla profondità massima (\texttt{max\_depth=5}), ottenendo un modello più semplice, più interpretabile e con prestazioni migliori sul test set:
 
 \begin{table}[H]
@@ -304,10 +393,19 @@ F1-score & 0.77 & 0.83 & 0.80 \\
 \label{tab:dt_pruned}
 \end{table}
 
-\imgplaceholder{Matrice di confusione del Decision Tree potato sul test set}{Matrice di confusione -- Decision Tree (potato)}{cm\_dt\_pruned.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_decision_tree_pruned_baseline.png} 
+            \caption{Matrice di confusione -- Decision Tree Potato}
+    \label{fig:cm_decision_tree_pruned_baseline}
+\end{figure}
 
-\imgplaceholder{Visualizzazione grafica dell'albero di decisione potato con \texttt{max\_depth=5}}{Albero di decisione potato}{albero\_potato.png}
-
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{decision_tree_pruned_baseline.png} 
+            \caption{Matrice di confusione -- Decision Tree Potato}
+    \label{fig:decision_tree_pruned_baseline}
+\end{figure}
 La validazione tramite 5-fold cross-validation sul Decision Tree potato ha restituito un'accuracy media pari a \textbf{0.725}, coerente con quanto osservato sul singolo test set.
 
 \subsection{Neural Network (Multi-Layer Perceptron)}
@@ -318,11 +416,21 @@ La validazione tramite 5-fold cross-validation sul Decision Tree potato ha resti
     \item Secondo hidden layer: 8 neuroni, attivazione sigmoide;
     \item Strato di output: 1 neurone, attivazione sigmoide (adatta alla classificazione binaria).
 \end{itemize}
-Il modello è stato compilato con funzione di perdita \texttt{binary\_crossentropy} e ottimizzatore \texttt{adam}, e addestrato per 100 epoche con \texttt{batch\_size=16} sui dati precedentemente standardizzati (\texttt{StandardScaler}), passaggio necessario poiché le reti neurali sono sensibili alla scala delle feature in input.
+Il modello è stato addestrato per 100 epoche con \texttt{batch\_size=16} sui dati precedentemente standardizzati (\texttt{StandardScaler}), passaggio necessario poiché le reti neurali sono sensibili alla scala delle feature in input.
 
-\imgplaceholder{Grafico dell'andamento dell'accuracy di training in funzione delle epoche}{Andamento dell'accuracy di training (Neural Network)}{nn\_accuracy\_epoche.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{nn_baseline_accuracy.png} 
+            \caption{Andamento dell'accuracy di training (Neural Network)}
+    \label{fig:nn_baseline_accuracy}
+\end{figure}
 
-\imgplaceholder{Grafico dell'andamento della loss di training in funzione delle epoche}{Andamento della loss di training (Neural Network)}{nn\_loss\_epoche.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{nn_baseline_loss.png} 
+            \caption{Andamento della loss di training (Neural Network)}
+    \label{fig:nn_baseline_loss}
+\end{figure}
 
 Sul test set, il modello ha ottenuto una \textbf{Test Accuracy di 0.8315} (Test Loss = 0.3813), con le seguenti metriche di classificazione:
 
@@ -341,8 +449,14 @@ F1-score & 0.81 & 0.85 & 0.83 \\
 \label{tab:nn_baseline}
 \end{table}
 
-\imgplaceholder{Matrice di confusione della rete neurale sul test set}{Matrice di confusione -- Neural Network}{cm\_nn\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_nn_baseline.png} 
+            \caption{Matrice di confusione - Neural Network}
+    \label{fig:cm_nn_baseline}
+\end{figure}
 
+\newpage
 \subsection{Support Vector Machine (SVM)}
 
 Per il terzo modello è stata scelta una SVM con le seguenti motivazioni:
@@ -368,7 +482,12 @@ F1-score & 0.81 & 0.87 & 0.84 \\
 \label{tab:svm_baseline}
 \end{table}
 
-\imgplaceholder{Matrice di confusione della SVM sul test set}{Matrice di confusione -- SVM}{cm\_svm\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_svm_baseline.png} 
+            \caption{Matrice di confusione - SVM}
+    \label{fig:cm_svm_baseline}
+\end{figure}
 
 \subsection{Confronto tra i modelli di baseline}
 
@@ -390,11 +509,17 @@ SVM & 0.842 & 0.85 & 0.84 & 0.84 \\
 \label{tab:confronto_baseline}
 \end{table}
 
-\imgplaceholder{Grafico a barre di confronto dell'accuracy tra i quattro modelli di baseline}{Confronto dell'Accuracy tra i modelli di baseline}{confronto\_accuracy\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=1\textwidth]{confronto_accuracy_modelli_baseline.png} 
+            \caption{Confronto dell’Accuracy tra i modelli di baseline}
+    \label{fig:confronto_accuracy_modelli_baseline}
+\end{figure}
 
 La SVM con kernel RBF risulta il modello con le prestazioni migliori sul test set, seguita dalla rete neurale; il Decision Tree potato mostra un netto miglioramento rispetto alla versione non potata, a conferma dell'efficacia del pruning nel ridurre l'overfitting.
 
 % ======================================================================
+\newpage
 \section{Introduzione del rumore nel dataset}
 % ======================================================================
 
@@ -709,7 +834,5 @@ confronto\_finale.png & Confronto finale & FacetGrid riepilogo generale \\
 \caption{Elenco riepilogativo delle immagini da inserire manualmente nel documento.}
 \label{tab:elenco_immagini}
 \end{table}
-
-\end{document}
 
 \end{document}
