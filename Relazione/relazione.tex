@@ -7,24 +7,20 @@
 \usepackage{amsmath}
 \usepackage[style=numeric,backend=biber]{biblatex}
 \addbibresource{bibliografia.bib}
-\geometry{a4paper, top=2.2cm, bottom=2.2cm, left=1.8cm, right=1.8cm}
 \setlength{\parindent}{0pt}
 \usepackage{xcolor}
 \usepackage[table]{xcolor}
 \usepackage{listings}
-\usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning}
 \usepackage{multicol}
 \usepackage{tikz}
 \usetikzlibrary{calc}
-\usepackage{amsmath}
-
+\usepackage{booktabs}
+\usepackage{multirow}
 
 % --- TRUCCO PER GLI SPAZI INVISIBILI DEL COPIA-INCOLLA ---
 \DeclareUnicodeCharacter{00A0}{ } 
 
-\addbibresource{bibliografia.bib}
-\geometry{a4paper, top=2.5cm, bottom=2.5cm, left=3.5cm, right=3.5cm}
+\geometry{a4paper, top=2.5cm, bottom=2.5cm, left=3cm, right=3cm}
 \setlength{\parindent}{0pt}
 
 % 1. DEFINIZIONE COLORI
@@ -58,6 +54,9 @@
     tabsize=2,
     showstringspaces=false 
 }
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{bookmark}
 
 \begin{document}
 
@@ -163,10 +162,11 @@ L'obiettivo del progetto è comprendere in che modo la presenza di rumore nei da
 Il dominio applicativo scelto è quello medicale/di supporto alla diagnosi: si è utilizzato l'\emph{UCI Heart Disease Dataset}, con l'obiettivo di prevedere la presenza o assenza di una malattia cardiaca a partire da variabili cliniche (classificazione binaria).
 
 % ======================================================================
+\newpage
 \section{Descrizione del dataset}
 % ======================================================================
 
-Il dataset utilizzato è lo \textbf{UCI Heart Disease Dataset}, reso disponibile su Kaggle\footnote{\url{https://www.kaggle.com/datasets/redwankarimsony/heart-disease-data}} e caricato in questo progetto da un repository GitHub del corso. Il dataset è composto da \textbf{920 istanze} e, nella sua forma originale, da \textbf{16 colonne}, tra cui variabili demografiche (età, sesso), cliniche (pressione a riposo, colesterolo, frequenza cardiaca massima, angina da sforzo, ecc.) e la variabile target \texttt{num}.
+Il dataset utilizzato è lo \textbf{UCI Heart Disease Dataset}, reso disponibile su GitHub\footnote{\url{https://raw.githubusercontent.com/Bicanic-Alen/Progetto_Archittura_Dati_2026/refs/heads/master/heart_disease_uci.csv}} e caricato in questo progetto da un repository GitHub del corso. Il dataset è composto da \textbf{920 istanze} e, nella sua forma originale, da \textbf{16 colonne}, tra cui variabili demografiche (età, sesso), cliniche (pressione a riposo, colesterolo, frequenza cardiaca massima, angina da sforzo, ecc.) e la variabile target \texttt{num}.
 
 La variabile target originale è \textbf{multiclasse} (valori da 0 a 4, dove 0 indica assenza di malattia e i valori da 1 a 4 indicano livelli crescenti di gravità). La distribuzione originale delle classi è riportata in Tabella~\ref{tab:target_dist}.
 
@@ -189,7 +189,45 @@ La variabile target originale è \textbf{multiclasse} (valori da 0 a 4, dove 0 i
 
 Diverse variabili presentano valori mancanti in misura significativa (ad esempio la colonna \texttt{ca}, presente solo in 309 istanze su 920), aspetto che ha reso necessaria un'attenta fase di preprocessing, descritta nella sezione seguente.
 
+
+{\small
+\begin{itemize}
+    \item \textbf{id}: identificatore univoco del paziente.
+    \item \textbf{age}: età del paziente espressa in anni.
+    \item \textbf{origin (dataset)}: luogo di provenienza dello studio clinico.
+    \item \textbf{sex}: sesso del paziente (Male/Female).
+    \item \textbf{cp (chest pain type)}: tipologia di dolore toracico, con le seguenti modalità:
+    \begin{itemize}
+        \item typical angina
+        \item atypical angina
+        \item non-anginal pain
+        \item asymptomatic
+    \end{itemize}
+    \item \textbf{trestbps}: pressione arteriosa a riposo (in mm Hg) misurata al momento del ricovero.
+    \item \textbf{chol}: livello di colesterolo (mg/dl).
+    \item \textbf{fbs (fasting blood sugar)}: indica se la glicemia a digiuno è superiore a 120 mg/dl (True/False).
+    \newpage \item  \textbf{restecg}: risultati dell’elettrocardiogramma a riposo:
+    \begin{itemize}
+        \item normal
+        \item ST-T wave abnormality
+        \item left ventricular hypertrophy
+    \end{itemize}
+    \item \textbf{thalach (maximum heart rate achieved)}: frequenza cardiaca massima raggiunta durante il test.
+    \item \textbf{exang}: presenza di angina indotta dall’esercizio fisico (True/False).
+    \item \textbf{oldpeak}: depressione del tratto ST indotta dall’esercizio rispetto alla condizione di riposo.
+    \item \textbf{slope}: pendenza del segmento ST al picco dell’esercizio.
+    \item \textbf{ca}: numero di vasi principali (0–3) colorati tramite fluoroscopia.
+    \item \textbf{thal}: risultato del test al tallio:
+    \begin{itemize}
+        \item normal
+        \item fixed defect
+        \item reversible defect
+    \end{itemize}
+    \item \textbf{num}: variabile target originale, che indica la presenza e la severità della malattia cardiaca.
+\end{itemize}
+}
 % ======================================================================
+\newpage
 \section{Preprocessing dei dati}
 % ======================================================================
 
@@ -231,7 +269,15 @@ ca & 611 \\
 \label{tab:missing}
 \end{table}
 
+\subsection{Scaling delle feature}
+
+Le variabili numeriche sono state normalizzate/scalate (StandardScaler) per
+garantire che feature con scale di grandezza diverse (es. colesterolo vs età) non
+sbilanciassero il peso durante l'addestramento, passaggio essenziale soprattutto per la Rete
+Neurale.
+
 % ======================================================================
+\newpage
 \section{Analisi esplorativa (EDA)}
 % ======================================================================
 
@@ -240,19 +286,51 @@ Dopo il preprocessing è stata condotta un'analisi esplorativa per comprendere l
 \subsection{Distribuzione del target binario}
 Il grafico a barre della distribuzione del target binario mostra un discreto bilanciamento tra le due classi (assenza/presenza di malattia), condizione favorevole per l'addestramento dei modelli di classificazione.
 
-\imgplaceholder{Grafico a barre (\texttt{sns.countplot}) della distribuzione del target binario (0 = assenza, 1 = presenza di malattia)}{Distribuzione della variabile target binaria}{distribuzione\_target.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{distribuzione_target.png} 
+            \caption{Distribuzione della variabile target binaria.}
+    \label{fig:distribuzione_target}
+\end{figure}
 
+\newpage
 \subsection{Matrice di correlazione}
 La matrice di correlazione tra tutte le variabili numeriche del dataset permette di individuare eventuali relazioni lineari forti tra le feature e con il target.
 
-\imgplaceholder{Heatmap della matrice di correlazione (\texttt{sns.heatmap} su \texttt{df.corr()})}{Matrice di correlazione tra le variabili del dataset}{matrice\_correlazione.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=1\textwidth]{matrice_correlazione.png} 
+            \caption{Matrice di correlazione tra le variabili del dataset}
+    \label{fig:matrice_correlazione}
+\end{figure}
+
+Dall'analisi esplorativa dei dati riportata nel notebook, è emerso attraverso la matrice di
+correlazione che variabili come il tipo di dolore toracico (cp) e la frequenza cardiaca
+massima (thalach) mostrano una correlazione positiva con la presenza della malattia. Al
+contrario, variabili come oldpeak mostrano una correlazione negativa. Inoltre, i grafici di
+distribuzione hanno evidenziato come l'età sia un fattore di rischio distribuito
+prevalentemente nella fascia over-50.
+
+\newpage
 
 \subsection{Distribuzione delle variabili numeriche}
 Gli istogrammi delle variabili numeriche permettono di valutarne la forma distributiva e la presenza di eventuali asimmetrie o outlier.
 
-\imgplaceholder{Griglia di istogrammi (\texttt{df.hist()}) per tutte le variabili numeriche del dataset}{Istogrammi delle variabili numeriche}{istogrammi\_variabili.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=1\textwidth]{istrogrammi_variabili.png} 
+            \caption{Istogrammi delle variabili numeriche}
+    \label{fig:istrogrammi_variabili}
+\end{figure}
+
+Gli istogrammi delle variabili numeriche mostrano distribuzioni non gaussiane e la presenza
+di asimmetrie, rafforzando la scelta della mediana come strategia di imputazione.
+I risultati dell’analisi esplorativa hanno fornito indicazioni fondamentali per le successive
+scelte di preprocessing, in particolare per la gestione dei valori mancanti, la codifica delle
+variabili categoriche e l’applicazione dello scaling delle feature.
 
 % ======================================================================
+\newpage
 \section{Suddivisione train/test}
 % ======================================================================
 
@@ -283,10 +361,22 @@ F1-score & 0.72 & 0.78 & 0.75 \\
 \label{tab:dt_baseline}
 \end{table}
 
-\imgplaceholder{Matrice di confusione del Decision Tree non potato sul test set}{Matrice di confusione -- Decision Tree (baseline)}{cm\_dt\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_decision_tree_not_pruned_baseline.png} 
+            \caption{Matrice di confusione -- Decision Tree (baseline)}
+    \label{fig:cm_decision_tree_not_pruned_baseline}
+\end{figure}
 
-\imgplaceholder{Visualizzazione grafica dell'albero di decisione non potato (\texttt{plot\_tree})}{Albero di decisione non potato}{albero\_non\_potato.png}
 
+\begin{figure}[H]
+            \centering
+            \includegraphics[width=1\textwidth]{decision_tree_not_pruned_baseline.png} 
+            \caption{Albero di decisione non potato}
+    \label{fig:decision_tree_not_pruned_baseline}
+\end{figure}
+
+\subsubsection{Decision Tree - Pruned}
 L'albero non potato tende a sovradattare (\emph{overfitting}) i dati di training. Per contenere questo effetto è stato introdotto un vincolo sulla profondità massima (\texttt{max\_depth=5}), ottenendo un modello più semplice, più interpretabile e con prestazioni migliori sul test set:
 
 \begin{table}[H]
@@ -304,10 +394,19 @@ F1-score & 0.77 & 0.83 & 0.80 \\
 \label{tab:dt_pruned}
 \end{table}
 
-\imgplaceholder{Matrice di confusione del Decision Tree potato sul test set}{Matrice di confusione -- Decision Tree (potato)}{cm\_dt\_pruned.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_decision_tree_pruned_baseline.png} 
+            \caption{Matrice di confusione -- Decision Tree Potato}
+    \label{fig:cm_decision_tree_pruned_baseline}
+\end{figure}
 
-\imgplaceholder{Visualizzazione grafica dell'albero di decisione potato con \texttt{max\_depth=5}}{Albero di decisione potato}{albero\_potato.png}
-
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{decision_tree_pruned_baseline.png} 
+            \caption{Matrice di confusione -- Decision Tree Potato}
+    \label{fig:decision_tree_pruned_baseline}
+\end{figure}
 La validazione tramite 5-fold cross-validation sul Decision Tree potato ha restituito un'accuracy media pari a \textbf{0.725}, coerente con quanto osservato sul singolo test set.
 
 \subsection{Neural Network (Multi-Layer Perceptron)}
@@ -318,11 +417,21 @@ La validazione tramite 5-fold cross-validation sul Decision Tree potato ha resti
     \item Secondo hidden layer: 8 neuroni, attivazione sigmoide;
     \item Strato di output: 1 neurone, attivazione sigmoide (adatta alla classificazione binaria).
 \end{itemize}
-Il modello è stato compilato con funzione di perdita \texttt{binary\_crossentropy} e ottimizzatore \texttt{adam}, e addestrato per 100 epoche con \texttt{batch\_size=16} sui dati precedentemente standardizzati (\texttt{StandardScaler}), passaggio necessario poiché le reti neurali sono sensibili alla scala delle feature in input.
+Il modello è stato addestrato per 100 epoche con \texttt{batch\_size=16} sui dati precedentemente standardizzati (\texttt{StandardScaler}), passaggio necessario poiché le reti neurali sono sensibili alla scala delle feature in input.
 
-\imgplaceholder{Grafico dell'andamento dell'accuracy di training in funzione delle epoche}{Andamento dell'accuracy di training (Neural Network)}{nn\_accuracy\_epoche.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{nn_baseline_accuracy.png} 
+            \caption{Andamento dell'accuracy di training (Neural Network)}
+    \label{fig:nn_baseline_accuracy}
+\end{figure}
 
-\imgplaceholder{Grafico dell'andamento della loss di training in funzione delle epoche}{Andamento della loss di training (Neural Network)}{nn\_loss\_epoche.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{nn_baseline_loss.png} 
+            \caption{Andamento della loss di training (Neural Network)}
+    \label{fig:nn_baseline_loss}
+\end{figure}
 
 Sul test set, il modello ha ottenuto una \textbf{Test Accuracy di 0.8315} (Test Loss = 0.3813), con le seguenti metriche di classificazione:
 
@@ -341,8 +450,14 @@ F1-score & 0.81 & 0.85 & 0.83 \\
 \label{tab:nn_baseline}
 \end{table}
 
-\imgplaceholder{Matrice di confusione della rete neurale sul test set}{Matrice di confusione -- Neural Network}{cm\_nn\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_nn_baseline.png} 
+            \caption{Matrice di confusione - Neural Network}
+    \label{fig:cm_nn_baseline}
+\end{figure}
 
+\newpage
 \subsection{Support Vector Machine (SVM)}
 
 Per il terzo modello è stata scelta una SVM con le seguenti motivazioni:
@@ -368,7 +483,12 @@ F1-score & 0.81 & 0.87 & 0.84 \\
 \label{tab:svm_baseline}
 \end{table}
 
-\imgplaceholder{Matrice di confusione della SVM sul test set}{Matrice di confusione -- SVM}{cm\_svm\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=0.7\textwidth]{cm_svm_baseline.png} 
+            \caption{Matrice di confusione - SVM}
+    \label{fig:cm_svm_baseline}
+\end{figure}
 
 \subsection{Confronto tra i modelli di baseline}
 
@@ -390,11 +510,17 @@ SVM & 0.842 & 0.85 & 0.84 & 0.84 \\
 \label{tab:confronto_baseline}
 \end{table}
 
-\imgplaceholder{Grafico a barre di confronto dell'accuracy tra i quattro modelli di baseline}{Confronto dell'Accuracy tra i modelli di baseline}{confronto\_accuracy\_baseline.png}
+\begin{figure}[h!]
+            \centering
+            \includegraphics[width=1\textwidth]{confronto_accuracy_modelli_baseline.png} 
+            \caption{Confronto dell’Accuracy tra i modelli di baseline}
+    \label{fig:confronto_accuracy_modelli_baseline}
+\end{figure}
 
 La SVM con kernel RBF risulta il modello con le prestazioni migliori sul test set, seguita dalla rete neurale; il Decision Tree potato mostra un netto miglioramento rispetto alla versione non potata, a conferma dell'efficacia del pruning nel ridurre l'overfitting.
 
 % ======================================================================
+\newpage
 \section{Introduzione del rumore nel dataset}
 % ======================================================================
 
@@ -447,38 +573,248 @@ High (55\%) & 1140 & 736 \\
 Questa tipologia di rumore simula errori di misurazione/inserimento tipici dei dati reali, più insidiosi dei semplici valori mancanti perché non facilmente identificabili.
 
 % ======================================================================
+\newpage
 \section{Impatto del rumore sulle prestazioni dei modelli}
 % ======================================================================
 
 Per ciascuna tipologia di rumore, i tre modelli (Decision Tree, SVM, Neural Network) sono stati riaddestrati sul training set corrotto e valutati sul medesimo test set pulito, applicando un preprocessing di base (imputazione con mediana per i NaN, scaling standard). Le prestazioni sono state inoltre validate tramite 5-fold cross-validation stratificata (\texttt{StratifiedKFold}, k=5) sul training set corrotto.
 
 \subsection{Valori mancanti}
+La prima tipologia di rumore che viene tratta è il rumore dovuto ai valori nulli. Per eseguire i test si è modificato il dataset introducendo a scaglioni i valori nulli con le percentuali indicate nel precedente capitolo.  Per ogni scaglione e inclusa la versione baseline 0\% (il dataframe sprovvisto da rumore) vengono addestrati i tre algoritmi di Machine Learning. \\
 
-\imgplaceholder{Matrici di confusione dei tre modelli (Decision Tree, SVM, Neural Network) per ciascun livello di valori mancanti}{Matrici di confusione al variare del livello di valori mancanti}{cm\_nan\_livelli.png}
+Dopo di che gli algoritmi vengono addestrati, e vengono prodotte le seguenti informazioni, la matrice di confusione, i valori dell'Accuracy, Precision, Recal e F1-Score e un grafico  sul accuracy. Tali informazioni ci permetto di capire il comportamento del algoritmo per ogni specifico caso. \\
 
-La Tabella~\ref{tab:cv_nan_base} riporta l'accuracy media di cross-validation al variare del livello di valori mancanti, con preprocessing di base (imputazione mediana + scaling).
+Successivamente eseguiamo anche la cross-validation k-fold, con $k = 5$ il quale ci permette di distinguere le prestazioni da un caso fortunato o sfortunato, dandoci dei valori più generali del comportamento degli algoritmi, non solo per un specifico caso.\\
+
+Di seguito si osservano le matrici di confusione:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN non ottimmizati/matrice di confusione 0.png}
+    \caption{Matrice di confusione della baseline}
+    \label{fig:valori_nan_0}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN non ottimmizati/matrice di confusione 15.png}
+    \caption{Matrice di confusione con l'introduzione del 15\% di valori nulli}
+    \label{fig:valori_nan_15}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN non ottimmizati/matrice di confusione 40.png}
+    \caption{Matrice di confusione con l'introduzione del 40\% di valori nulli}
+    \label{fig:valori_nan_40}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN non ottimmizati/matrice di confusione 55.png}
+    \caption{Matrice di confusione con l'introduzione del 55\% di valori nulli}
+    \label{fig:valori_nan_55}
+\end{figure}
+
+Dalle matrici di confusione mostrate nelle Figure ~\ref{fig:valori_nan_0}, ~\ref{fig:valori_nan_15}, ~\ref{fig:valori_nan_40} e~\ref{fig:valori_nan_55}, si osservano sulla diagonale principale i valori predetti correttamente (rispettivamente, dall'alto verso il basso, i Veri Negativi e i Veri Positivi), mentre al di fuori di essa (in alto a destra e in basso a sinistra) figurano i valori classificati in modo errato, ovvero i Falsi Positivi e i Falsi Negativi.\\
+
+La Figura~\ref{fig:valori_nan_0} riporta i risultati sul dataset originale (pulito), che rappresenta la baseline di riferimento per valutare il successivo degrado delle performance. In questo scenario si nota una distribuzione ottimale, con un'elevata concentrazione di valori sulla diagonale; la completezza dei dati permette di minimizzare i Falsi Negativi, garantendo un'elevata affidabilità clinica. È già possibile notare come i modelli SVM e Rete Neurale mostrino una precisione superiore rispetto al Decision Tree.\\
+
+Con l'introduzione progressiva del 15\% e del 40\% di rumore (Figure~\ref{fig:valori_nan_15} e~\ref{fig:valori_nan_40}), le prestazioni della SVM e della Rete Neurale rimangono pressoché stabili rispetto alla baseline. Al contrario, il Decision Tree inizia a registrare un aumento dei Falsi Negativi. Questo indica che la ricostruzione dei dati tramite imputazione, per quanto efficace, introduce un rumore sufficiente a distorcere i confini decisionali gerarchici tipici di questo modello.\\
+
+Infine, nello scenario più critico in cui la percentuale di valori nulli supera quella dei dati reali (55\%, mostrato in Figura~\ref{fig:valori_nan_55}), si osserva un netto divario tra le architetture: 
+\begin{itemize}
+    \item Il Decision Tree mostra il comportamento peggiore, registrando ben 27 Falsi Negativi, un dato che in un contesto clinico è preoccupante. La notevole perdita di informazioni compromette in maniera irreversibile i criteri di split nodale, impedendo all'algoritmo di individuare un numero elevato di pazienti positivi.
+    \item La SVM si dimostra invece l'algoritmo in assoluto più resiliente, limitando i Falsi Negativi a soli 10 casi e mantenendo ben 92 Veri Positivi (un valore vicinissimo ai 95 della baseline). Ciò conferma la capacità del kernel RBF di garantire un iperpiano di separazione estremamente solido.
+    \item La Rete Neurale, infine, si conferma la soluzione più bilanciata: offrendo ottime prestazioni con soli 13 Falsi Negativi, dimostra che un apprendimento basato sull'aggiornamento dei pesi sinaptici e sulle funzioni di attivazione è in grado di tollerare efficacemente il rumore introdotto dall'imputazione semplice.
+\end{itemize}
+
 
 \begin{table}[H]
 \centering
-\begin{tabular}{lccc}
+\begin{tabular}{llcccc}
 \toprule
-\textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\textbf{Livello} & \textbf{Modello} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
 \midrule
-Baseline (0\%) & 0.754 & 0.818 & 0.802 \\
-Low (15\%) & 0.730 & 0.798 & 0.792 \\
-Medium (40\%) & 0.704 & 0.761 & 0.777 \\
-High (55\%) & 0.716 & 0.693 & 0.743 \\
+\textit{Baseline} & Decision Tree  & 0.804 & 0.806 & 0.853 & 0.829 \\
+                  & SVM            & 0.842 & 0.812 & 0.931 & 0.868 \\
+                  & Neural Network & 0.832 & 0.826 & 0.882 & 0.853 \\
+\midrule
+\textit{Low 15\%} & Decision Tree  & 0.793 & 0.872 & 0.735 & 0.798 \\
+                  & SVM            & 0.826 & 0.807 & 0.902 & 0.852 \\
+                  & Neural Network & 0.821 & 0.829 & 0.853 & 0.841 \\
+\midrule
+\textit{Med 40\%} & Decision Tree  & 0.777 & 0.851 & 0.725 & 0.783 \\
+                  & SVM            & 0.832 & 0.826 & 0.882 & 0.853 \\
+                  & Neural Network & 0.821 & 0.829 & 0.853 & 0.841 \\
+\midrule
+\textit{High 55\%}& Decision Tree  & 0.745 & 0.789 & 0.735 & 0.761 \\
+                  & SVM            & 0.837 & 0.821 & 0.902 & 0.860 \\
+                  & Neural Network & 0.832 & 0.832 & 0.873 & 0.852 \\
 \bottomrule
 \end{tabular}
-\caption{Accuracy media di CV (5-fold) al variare del livello di valori mancanti, con imputazione base (mediana).}
-\label{tab:cv_nan_base}
+\caption{Metriche di performance dei modelli su diversi livelli di rumore}
+\label{tab:metriche_finali}
 \end{table}
 
-Si osserva un degrado progressivo delle prestazioni all'aumentare della percentuale di valori mancanti, particolarmente marcato per la SVM, che passa da 0.818 (baseline) a 0.693 (55\% di rumore).
+La Tabella \ref{tab:metriche_finali} fornisce un quadro quantitativo e comparativo del degrado prestazionale dei tre modelli all'aumentare dei dati mancanti. Analizzando le metriche di Accuracy, Precision, Recall e F1-Score, emergono dinamiche comportamentali nettamente distinte tra le architetture testate.\\
+
+In primo luogo, si rileva l'estrema vulnerabilità del Decision Tree. Partendo da una Baseline già inferiore agli altri modelli (Accuracy 0.804), l'algoritmo subisce un crollo progressivo e significativo, scendendo a un'Accuracy di 0.745 al livello di rumore estremo (55\%). Il dato più critico riguarda la sua Recall, che precipita da 0.853 a 0.735 già con solo il 15\% di rumore. Questo indica che, in presenza di dati imputati, l'albero di decisione diventa un modello "iper-cauto", aumentando temporaneamente la Precision (0.872 al 15\%) a scapito della capacità di individuare correttamente i casi positivi (Falsi Negativi), un difetto grave in ambito diagnostico.\\
+
+Al contrario, la Support Vector Machine (SVM) si conferma come il modello più robusto dell'intero esperimento. Mantiene il primato in tutte le fasi di test: la sua Accuracy oscilla in modo marginale (da 0.842 della Baseline a 0.837 nel livello High), dimostrando una quasi totale indifferenza al rumore. Ancora più rilevante è il mantenimento di una Recall costantemente superiore a 0.88 (raggiungendo 0.902 al 55\%), confermando che l'uso del kernel RBF permette di preservare la corretta classificazione dei pazienti malati anche quando oltre metà delle feature viene ricostruita artificialmente.
+
+Infine, la Neural Network evidenzia un comportamento molto stabile e bilanciato. Partendo da ottimi valori iniziali (Accuracy 0.832 e Recall 0.882), la rete gestisce il degrado informativo con notevole resilienza, stabilizzandosi al livello High (55\%) su un F1-Score di 0.852, praticamente identico alla Baseline (0.853). Ciò dimostra che la natura distribuita dei pesi sinaptici compensa efficacemente i valori mediani introdotte dal processo di imputazione.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN non ottimmizati/plot accuracy.png}
+    \caption{Il grafico mostra l'andamento dell'accuracy al aumentare dei valori nulli per gli algoritmi testati Decision Tree, SVM e Reti Neurali}
+    \label{fig:andamento_accuracy_nan_no_proc}
+\end{figure}
+
+A conferma di quanto detto finora, osserviamo nella figura \ref{fig:andamento_accuracy_nan_no_proc} come la curva che rappresenta il decision tree ha un netto crollo di accuratezza all'aumentare dei valori nulli, maggiormente marcato nel momento in cui si superamento del 40\%. Mentre i metodi SVM e Reti Neurali hanno un comportamento simile, dove la curva del SVM parte dalla accurattezza piu elevata dei tre e tende ad essere piatta nonostante un piccolo calo iniziale tra il 0\% e il 15\%. In fine, La curva della Rete Neurale si mostra stabile e bilanciata.
+
+\subsubsection{Cross-Validation}
+Per poter validare i risultati analizzati fin ora, e quindi confermare la validità statistica dei valori e assicurare che le performance dei modelli non siano dipendenti da una specifica e fortuita partizione del dataset (train-test split), è stata applicata una tecnica di K-Fold Cross-Validation (con $k=5$).\\
+
+ Analizzando i risultati medi dell'accuracy nei diversi fold, si ha la prova concreta di quanto un modello sia solido o meno.
+
+La Tabella~\ref{tab:confronto_modelli_nan} riporta l'accuracy media di cross-validation al variare del livello di valori mancanti, con preprocessing di base (imputazione mediana + scaling).
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Livello NaN} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+        \midrule
+        Baseline (0\%) & 0.7541 & 0.8180 & 0.8071 \\
+        Low 15\%       & 0.7296 & 0.7976 & 0.7962 \\
+        Medium 40\%    & 0.7038 & 0.7609 & 0.7731 \\
+        High 55\%      & 0.7161 & 0.6930 & 0.7405 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Confronto dell'Accuracy Media CV al variare della percentuale di valori mancanti (Strategia: Base SimpleImputer)}
+    \label{tab:confronto_modelli_nan}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Valori NaN/K-Fold/k-fold - senza ottimmizazioni.png}
+    \caption{Il grafico mostra l'andamento dell'accuracy essegundo la cross validation k-fold, k = 5, con gli algoritmi non ottimizzati e con l'imputer basico}
+    \label{fig:placeholder}
+\end{figure}
+
+La K-Fold Cross-Validation a 5 split ribalta i risultati iniziali, svelando la vera vulnerabilità dei modelli al rumore estremo (55\%).\\
+
+La SVM subisce un drastico ridimensionamento: le ottime performance del singolo split erano dovute al caso (high variance). Nella validazione incrociata le prestazioni precipitano, poiché l'uso notevole della mediana azzera la varianza locale, compromettendo l'iperpiano del kernel RBF.
+La Neural Network si conferma invece il modello più solido, mantenendo un'Accuracy media superiore a 0.74. A differenza della SVM, l’aggiornamento dei suoi pesi sinaptici tollera efficacemente l'appiattimento informativo causato dall’imputazione semplice.\\
+
+In conclusione, dal confronto validato tramite Cross-Validation è emersa una chiara gerarchia. Il Decision Tree si è confermato strutturalmente inadeguato a gestire la sparsità informativa, risultando il modello più vulnerabile/fragile. La SVM, inizialmente apparsa come il modello più resiliente, ha rivelato una profonda instabilità geometrica di fronte alla sostituzione dei valori nulli con la mediana della rispettiva colonna, specialmente negli scenari ad alto rumore (55%).\\
+Il modello che ha ottenuto la miglior performance in questo test di robustezza è risultato essere la Neural Network. In assenza di ottimizzazioni avanzate e di imputazioni multivariate, il modello neurale ha offerto la maggiore affidabilità predittiva, assorbendo le anomalie dei dati ricostruiti grazie alla natura distribuita delle sue funzioni di attivazione.
+
 
 \subsection{Valori duplicati}
 
-\imgplaceholder{Matrici di confusione dei tre modelli per ciascun livello di duplicazione}{Matrici di confusione al variare del livello di duplicazione}{cm\_dup\_livelli.png}
+Analogamente alle altre tipologie di rumore, i tre modelli sono stati riaddestrati sul
+training set con duplicati e valutati sul medesimo test set pulito. Le matrici di
+confusione per i quattro livelli sono riportate nelle Figure~\ref{fig:cm_dup_baseline}--\ref{fig:cm_dup_high55}.
+
+\begin{figure}[H]
+    \centering
+    %\includegraphics[width=0.95\textwidth]{cm_dup_baseline.png}
+    \caption{Matrice di confusione con il training set originale (Baseline, 0\% duplicati)}
+    \label{fig:cm_dup_baseline}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    %\includegraphics[width=0.95\textwidth]{cm_dup_low15.png}
+    \caption{Matrice di confusione con il 15\% di righe duplicate}
+    \label{fig:cm_dup_low15}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    %\includegraphics[width=0.95\textwidth]{cm_dup_medium40.png}
+    \caption{Matrice di confusione con il 40\% di righe duplicate}
+    \label{fig:cm_dup_medium40}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    %\includegraphics[width=0.95\textwidth]{cm_dup_high55.png}
+    \caption{Matrice di confusione con il 55\% di righe duplicate}
+    \label{fig:cm_dup_high55}
+\end{figure}
+
+A differenza di quanto osservato per i valori mancanti e per i dati sporchi, la presenza
+di righe duplicate produce un effetto pressoch\'e trascurabile sul test set pulito. Il
+Decision Tree mantiene 15 Falsi Negativi tra Baseline e Low, per poi salire a 24 e 26
+rispettivamente ai livelli Medium e High; la SVM passa da 7 (Baseline/Low) a 8 (Medium)
+e 10 (High) Falsi Negativi; la Neural Network resta stabile tra 12 e 13 casi in tutti gli
+scenari. Questo comportamento \`e coerente con la natura del rumore introdotto: duplicare
+una riga non aggiunge informazione nuova, ma ne aumenta soltanto il peso relativo nella
+funzione di perdita durante l'addestramento.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Livello} & \textbf{Modello} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\midrule
+\multirow{3}{*}{Baseline (0\%)}
+ & Decision Tree   & 0.804 & 0.806 & 0.853 & 0.829 \\
+ & SVM             & 0.842 & 0.812 & 0.931 & 0.868 \\
+ & Neural Network  & 0.837 & 0.840 & 0.873 & 0.856 \\
+\midrule
+\multirow{3}{*}{Low (15\%)}
+ & Decision Tree   & 0.810 & 0.813 & 0.853 & 0.833 \\
+ & SVM             & 0.848 & 0.819 & 0.931 & 0.872 \\
+ & Neural Network  & 0.842 & 0.841 & 0.882 & 0.861 \\
+\midrule
+\multirow{3}{*}{Medium (40\%)}
+ & Decision Tree   & 0.804 & 0.867 & 0.765 & 0.813 \\
+ & SVM             & 0.842 & 0.817 & 0.922 & 0.866 \\
+ & Neural Network  & 0.815 & 0.809 & 0.873 & 0.840 \\
+\midrule
+\multirow{3}{*}{High (55\%)}
+ & Decision Tree   & 0.804 & 0.884 & 0.745 & 0.809 \\
+ & SVM             & 0.848 & 0.836 & 0.902 & 0.868 \\
+ & Neural Network  & 0.842 & 0.841 & 0.882 & 0.861 \\
+\bottomrule
+\end{tabular}
+\caption{Metriche di performance sul test set, ai vari livelli di duplicazione del training set.}
+\label{tab:dup_test}
+\end{table}
+
+L'unico modello a mostrare un degrado apprezzabile \`e il Decision Tree, la cui Recall
+scende da 0.853 (baseline) a 0.745 (High 55\%). La SVM mantiene un F1-Score compreso tra
+0.866 e 0.872 in tutti gli scenari; la Neural Network oscilla in un intervallo
+leggermente pi\`u ampio (0.840--0.861), con un minimo al livello Medium, senza per\`o
+mostrare alcun trend di degrado sistematico.
+
+\begin{figure}[H]
+    \centering
+    %\includegraphics[width=0.75\textwidth]{accuracy_test_duplicati.png}
+    \caption{Andamento dell'Accuracy sul test set al variare del livello di duplicazione}
+    \label{fig:acc_dup_test}
+\end{figure}
+
+A differenza delle curve nette osservate per i valori mancanti 
+e per i dati sporchi, le curve in
+Figura~\ref{fig:acc_dup_test} restano pressoch\'e piatte, con oscillazioni contenute entro
+1--2 punti percentuali. Questo risultato \`e importante da confrontare con quanto emerge
+dalla Cross-Validation nella sotto-sezione seguente.
+
+\subsubsection{Cross-Validation}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{cm_dup_livelli.jpg}
+    \caption{Confronto dell'Accuracy tra i modelli di baseline}
+    \label{fig:cm_dup_livelli}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -496,29 +832,152 @@ High (55\%) & 0.799 & 0.854 & 0.823 \\
 \label{tab:cv_dup_base}
 \end{table}
 
-A differenza delle altre tipologie di rumore, l'accuracy in cross-validation \textbf{aumenta} apparentemente con il livello di duplicazione. Questo risultato è \textbf{fuorviante}: è dovuto a un fenomeno di \emph{data leakage}, poiché la suddivisione in fold della cross-validation può separare copie identiche della stessa riga tra training e validation del fold, rendendo la stima della performance eccessivamente ottimistica. Questo aspetto viene analizzato e corretto nella Sezione~\ref{sec:dedup}.
+A differenza delle altre tipologie di rumore, l'accuracy in cross-validation
+\textbf{aumenta} apparentemente con il livello di duplicazione. Questo risultato \`e
+fuorviante: \`e dovuto a un fenomeno di \emph{data leakage}, poich\'e la suddivisione in
+fold della cross-validation pu\`o separare copie identiche della stessa riga tra training
+e validation del fold, rendendo la stima della performance eccessivamente ottimistica.
+
+Il confronto diretto tra la Tabella~\ref{tab:dup_test} (valutazione onesta sul test set)
+e la Tabella~\ref{tab:cv_dup_base} (valutazione in Cross-Validation) permette di isolare
+due dinamiche:
+
+\begin{itemize}
+    \item \textbf{Il segnale reale \`e piatto:} sul test set indipendente l'Accuracy resta
+    sostanzialmente invariata al crescere della duplicazione per tutti e tre i modelli,
+    a conferma che duplicare righe non introduce n\'e informazione utile n\'e rumore dannoso;
+    \item \textbf{Il segnale in CV \`e un artefatto, non legato alla complessit\`a del modello:}
+    tra Baseline e High 55\% l'accuracy di CV cresce di +4.5 punti percentuali per il
+    Decision Tree (0.754$\to$0.799), +3.6 per la SVM (0.818$\to$0.854) e +1.6 per la Neural
+    Network (0.807$\to$0.823). Nessuno di questi incrementi trova riscontro in
+    Tabella~\ref{tab:dup_test}: il fatto che sia interessato anche un modello semplice e
+    regolarizzato come il Decision Tree dimostra che il leakage \`e una propriet\`a dello
+    split dei dati, non dell'algoritmo, e va quindi corretto a monte (Sezione~\ref{sec:dedup}),
+    non tramite tecniche di regolarizzazione del modello.
+\end{itemize}
 
 \subsection{Dati sporchi}
+In questa sezione analizziamo il comportamento dei 3 modelli (SVM, Decision Tree, e Reti Neurali) con l'introduzione di valori sporchi sempre come visto nei precedenti casi a scaglioni. In questa fase di test introducendo valori sbagliati il richio per gli algoritmi è quello di apprendere pattern errati. 
 
-\imgplaceholder{Matrici di confusione dei tre modelli per ciascun livello di rumore "sporco"}{Matrici di confusione al variare del livello di dati sporchi}{cm\_dirty\_livelli.png}
+Di seguito, analizziamo le matrici di confusione per ogni livello di valori sporchi aggiunti, per analizzare il livello di degrado che viene raggiunto dagli algoritmi e quale di esso abbia il comportamento migliore.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori sporchi senza ottimizzazione/Matrice di confunsione 0.png}
+    \caption{Matrice di confusione per i tre modelli di ML senza valori sporchi aggiunti}
+    \label{fig:mtr_conf_base_dirty}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori sporchi senza ottimizzazione/Matrice di confunsione 15.png}
+    \caption{Matrice di confusione per i tre modelli di ML con il 15\% di valori sporchi aggiunti}
+    \label{fig:mtr_conf_15_dirty}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori sporchi senza ottimizzazione/Matrice di confunsione 40.png}
+    \caption{Matrice di confusione per i tre modelli di ML con il 40\% di valori sporchi aggiunti}
+    \label{fig:mtr_conf_40_dirty}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori sporchi senza ottimizzazione/Matrice di confunsione 55.png}
+    \caption{Matrice di confusione per i tre modelli di ML con il 55\% di valori sporchi aggiunti}
+    \label{fig:mtr_conf_55_dirty}
+\end{figure}
+
+La Figura \ref{fig:mtr_conf_base_dirty} mostra il comportamento degli algoritmi con il dataset pulito; questa serie di matrici rappresenta la baseline di riferimento che utilizzeremo per valutare il livello di degrado al crescere della percentuale di valori sporchi (rumore) inseriti nel dataset.\\
+
+Con l'introduzione del 15\% di valori sporchi, come mostrato nella Figura \ref{fig:mtr_conf_15_dirty}, si può notare che la Rete Neurale e la SVM dimostrano un'ottima resilienza iniziale, presentando matrici di confusione pressoché identiche a quelle della baseline. Al contrario, il Decision Tree mostra già un primo calo delle prestazioni, passando da 15 a 20 Falsi Negativi.\\
+
+Aumentando la percentuale di dati sporchi al 40\% (Figura \ref{fig:mtr_conf_40_dirty}), il Decision Tree evidenzia forti difficoltà nella classificazione, raggiungendo i 30 Falsi Negativi. I modelli SVM e Rete Neurale, seppur comportandosi decisamente meglio rispetto all'albero di decisione, subiscono un raddoppio delle classificazioni errate di tipo Falso Negativo. Questo andamento conferma che, a questo livello di corruzione, l'addestramento inizia a interiorizzare i falsi pattern causati dai valori sporchi, i quali distorcono lo spazio vettoriale e l'aggiornamento dei pesi sinaptici.\\
+
+Infine, raggiungendo il 55\% di valori sporchi (superando quindi la quantità di dati reali), si osserva un drastico decadimento prestazionale, come visibile nella Figura \ref{fig:mtr_conf_55_dirty}. La SVM subisce un ulteriore raddoppio dei Falsi Negativi, dimostrando che il rumore ha alterato le distanze vettoriali a tal punto da rendere il kernel RBF incapace di tracciare un margine di separazione sensato, portando a misclassificare oltre un terzo dei pazienti malati. Anche la Rete Neurale subisce un grave peggioramento, toccando i 32 Falsi Negativi: l'eccesso di rumore satura i gradienti durante l'addestramento, impedendo al modello di distinguere il segnale clinico dalle anomalie. Il Decision Tree, invece, registra un comportamento anomalo: i Falsi Negativi si riducono a 19, ma si assiste a un'esplosione dei Falsi Positivi. Questo squilibrio è riconducibile alla generazione di regole di split caotiche che, nel tentativo di mitigare l'elevata incertezza dei valori, finiscono per favorire la classe positiva in modo fuorviante.\\
+
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Livello} & \textbf{Modello} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\midrule
+\multirow{3}{*}{\textit{Baseline (0\%)}} & Decision Tree  & 0.804 & 0.806 & 0.853 & 0.829 \\
+                                         & SVM            & 0.842 & 0.812 & 0.931 & 0.868 \\
+                                         & Neural Network & 0.832 & 0.832 & 0.873 & 0.852 \\
+\midrule
+\multirow{3}{*}{\textit{Low 15\%}}       & Decision Tree  & 0.750 & 0.759 & 0.804 & 0.781 \\
+                                         & SVM            & 0.826 & 0.812 & 0.892 & 0.850 \\
+                                         & Neural Network & 0.826 & 0.812 & 0.892 & 0.850 \\
+\midrule
+\multirow{3}{*}{\textit{Medium 40\%}}    & Decision Tree  & 0.701 & 0.742 & 0.706 & 0.724 \\
+                                         & SVM            & 0.772 & 0.783 & 0.814 & 0.798 \\
+                                         & Neural Network & 0.793 & 0.814 & 0.814 & 0.814 \\
+\midrule
+\multirow{3}{*}{\textit{High 55\%}}      & Decision Tree  & 0.712 & 0.709 & 0.814 & 0.758 \\
+                                         & SVM            & 0.679 & 0.747 & 0.637 & 0.688 \\
+                                         & Neural Network & 0.685 & 0.729 & 0.686 & 0.707 \\
+\bottomrule
+\end{tabular}
+\caption{Metriche di performance dei modelli ai vari livelli di corruzione del dataset (Dati Sporchi).}
+\label{tab:metriche_sporchi}
+\end{table}
+
+La Tabella \ref{tab:metriche_sporchi} quantifica il degrado causato dall'inserimento di dati sporchi nel set di addestramento, evidenziando due principalmente due situazioni:
+\begin{itemize}
+    \item La SVM e la Rete Neurale nonostante sono stabili al 15\% di rumore (F1-Score 0.850), le prestazioni precipitano al 55\%. È particolarmente critico il peggioramento della Recall per la SVM (da 0.931 a 0.637): a causa dei falsi pattern, il modello perde quasi il 30\% della sua sensibilità diagnostica.
+    \item Il Decision Tree come visto prima Al 55\% di rumore mostra un anomalia dove l'albero registra una Recall elevata (0.814) accompagnata però dalla peggior Precision del test (0.709). Per gestire i dati sporchi, l'algoritmo sovra-prevede sistematicamente la classe positiva, generando un eccesso di Falsi Positivi che ne azzera l'affidabilità clinica.
+\end{itemize}
+
+Le dinamiche finora descritte trovano perfetta corrispondenza grafica nella Figura \ref{fig:accuracy_plt_dirty}. È evidente il crollo verticale delle prestazioni per SVM e Rete Neurale non appena il rumore supera il 15\%. Risulta inoltre ben visibile l'anomala risalita della curva del Decision Tree nello scenario più estremo (55\%): come dimostrato dai dati tabellari (tabella \ref{tab:metriche_sporchi}, questo 'miglioramento' dell'Accuracy è falso, frutto di uno sbilanciamento predittivo che non garantisce alcuna reale affidabilità clinica.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori sporchi senza ottimizzazione/Accuracy plot.png}
+    \caption{Grafico sul accuratezza al aumentare dei valori sporchi }
+    \label{fig:accuracy_plt_dirty}
+\end{figure}
+
+\subsubsection{Cross Validation}
+A questo punto per avere la certezza che l'analisi sia solida e che i risultati non siano frutto di un singolo train-test split particolarmente sbilanciato, si applica la K-Fold Cross-Validation a 5 split. Guardando le medie dell'Accuracy, emerge chiaramente quanto i modelli base siano vulnerabili di fronte all'inserimento di dati falsati. I numeri sono riassunti nella tabella \ref{tab:cv_sporchi_pivoted} sottostante:
 
 \begin{table}[H]
 \centering
 \begin{tabular}{lccc}
-\toprule
+\hline
 \textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
-\midrule
-Baseline (0\%) & 0.754 & 0.818 & 0.804 \\
-Low (15\%) & 0.731 & 0.766 & 0.760 \\
-Medium (40\%) & 0.693 & 0.683 & 0.686 \\
-High (55\%) & 0.647 & 0.697 & 0.709 \\
-\bottomrule
+\hline
+Baseline (0\%)  & 0.754 & 0.818 & 0.808 \\
+Low 15\%        & 0.731 & 0.766 & 0.761 \\
+Medium 40\%     & 0.693 & 0.683 & 0.694 \\
+High 55\%       & 0.647 & 0.697 & 0.702 \\
+\hline
 \end{tabular}
-\caption{Accuracy media di CV (5-fold) al variare del livello di dati sporchi, con modelli non regolarizzati.}
-\label{tab:cv_dirty_base}
+\caption{Accuracy media in K-Fold Cross-Validation (K=5) per ciascun modello e livello di corruzione.}
+\label{tab:cv_sporchi_pivoted}
 \end{table}
 
-Questa tipologia di rumore risulta la più dannosa per le prestazioni: tutti e tre i modelli mostrano un calo consistente e monotono dell'accuracy all'aumentare del livello di rumore, poiché i valori errati (ma plausibili) alterano direttamente la relazione tra feature e target senza essere facilmente rilevabili come nel caso dei NaN.
+Di seguito vengono mostrati i dati della tabella \ref{tab:cv_sporchi_pivoted} sotto forma grafica.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori sporchi senza ottimizzazione/k-fold.png}
+    \caption{Andamento della Accurancy per ciascun modello tramite Cross-Validation k-fold}
+    \label{fig:placeholder}
+\end{figure}
+
+L'analisi di queste misurazioni permette di evidenziare tre dinamiche fondamentali:
+\begin{itemize}
+    \item Il risultato più importante della Cross-Validation si ottiene osservando l'andamento dell'albero di decisione, dove il finto miglioramento notato nel singolo test al 55\% scompare del tutto. Calcolando la media sui 5 fold, l'Accuracy precipita al valore più basso dell'intero esperimento (0.647). Questo dimostra che l'algoritmo non sa adattarsi al rumore, ma si limita a creare regole di classificazione instabili e prive di logica.
+    
+    \item A differenza di quanto visto con i dati mancanti, l'inserimento di dati "sporchi" ha un effetto distruttivo molto più rapido. Già al 40\% di rumore, tutti i modelli crollano sotto la soglia dello 0.70. Questo accade perché gli algoritmi apprendono dei pattern falsi, i quali causano un forte disturbo nella fase di addestramento, alterando i gradienti (per la Rete Neurale) e i vettori di supporto (per la SVM).
+    
+    \item Nello scenario peggiore, dove è presente il 55\% di valori corrotti, la Rete Neurale (0.702) e la SVM (0.697) ottengono risultati quasi identici, fermandosi su livelli di affidabilità del tutto inaccettabili. Tuttavia, la Rete Neurale mantiene un minimo vantaggio rispetto agli altri modelli. 
+\end{itemize}
+
+In conclusione, questo test dimostra una regola fondamentale: nessun modello, per quanto avanzato, può formulare una predizione corretta se più della metà delle informazioni che gli vengono fornite è corrotta. Pertanto, questa tipologia di rumore risulta la più dannosa per le prestazioni. Tutti e tre i modelli mostrano un calo consistente e progressivo dell'Accuracy all'aumentare del livello di rumore, poiché i valori errati alterano direttamente la relazione logica tra feature e target senza essere facilmente rilevabili e isolabili, come avviene invece nel caso dei valori nulli.
 
 % ======================================================================
 \section{Tecniche di preprocessing e regolarizzazione per la mitigazione del rumore}
@@ -535,27 +994,248 @@ Oltre all'imputazione di base con la mediana, sono state testate due strategie d
     \item \textbf{Iterative Imputer}: stima ogni valore mancante modellandolo come funzione delle altre variabili, in modo iterativo (\texttt{max\_iter=10}).
 \end{itemize}
 
-La Tabella~\ref{tab:cv_nan_confronto} confronta l'accuracy media di cross-validation ottenuta con le tre strategie di imputazione (per la SVM, unico modello riportato a titolo di confronto sintetico -- i risultati completi per tutti i modelli sono disponibili nel notebook).
+\subsubsection{Imputazione con KNN}
+
+L'applicazione del KNN Imputer, insieme all'introduzione di vincoli di regolarizzazione per prevenire l'overfitting sui dati ricostruiti, ha generato un impatto di miglioramento sulle performance architetturali su tutti i 3 gli algoritmi utilizzati, i quali sono visibili nell'andamento dell'Accuracy (Figura \ref{fig:acc_knn}) e confermati dai valori in Tabella \ref{tab:metriche_knn}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Valori NaN/Valori NaN KNN Robusti/plot accuracy Knn e Robusti.png}
+    \caption{Andamento dell'Accuracy con ottimizzazione KNN Imputer e Regolarizzazione.}
+    \label{fig:acc_knn}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llcccc}
+\hline
+\textbf{Livello} & \textbf{Modello} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+\textit{Baseline (0\%)} & Decision Tree  & 0.815 & 0.815 & 0.863 & 0.838 \\
+                        & SVM            & 0.826 & 0.792 & 0.931 & 0.856 \\
+                        & Neural Network & 0.815 & 0.809 & 0.873 & 0.840 \\
+\hline
+\textit{Low 15\%}       & Decision Tree  & 0.772 & 0.724 & 0.951 & 0.822 \\
+                        & SVM            & 0.821 & 0.790 & 0.922 & 0.851 \\
+                        & Neural Network & 0.821 & 0.829 & 0.853 & 0.841 \\
+\hline
+\textit{Medium 40\%}    & Decision Tree  & 0.788 & 0.812 & 0.804 & 0.808 \\
+                        & SVM            & 0.810 & 0.777 & 0.922 & 0.843 \\
+                        & Neural Network & 0.810 & 0.819 & 0.843 & 0.831 \\
+\hline
+\textit{High 55\%}      & Decision Tree  & 0.793 & 0.814 & 0.814 & 0.814 \\
+                        & SVM            & 0.810 & 0.772 & 0.931 & 0.844 \\
+                        & Neural Network & 0.826 & 0.837 & 0.853 & 0.845 \\
+\hline
+\end{tabular}
+\caption{Metriche di performance per i modelli ottimizzati con KNN Imputer e Regolarizzazione.}
+\label{tab:metriche_knn_dettaglio}
+\end{table} 
+
+L'analisi di queste metriche evidenzia tre dinamiche fondamentali:
+
+\begin{itemize}
+    \item L'adozione del KNN Imputer e di un soft margin ($C=0.1$) ha permesso alla SVM di mantenere un ottima stabilità prestazionale, registrando un'Accuracy dello 0.810 anche nello scenario più critico (55\%). Il dato più rilevante in ottica clinica è la \textit{Recall} (Sensibilità), che si attesta a un eccellente 0.931. Come confermato dalla matrice di confusione (Figura \ref{fig:knn_mtr_55}), l'imputazione basata sulla distanza dei vicini ha preservato la coerenza geometrica dello spazio delle feature, permettendo al kernel RBF di tracciare un iperpiano stabile che commette appena 7 Falsi Negativi su 102 pazienti positivi reali.
+    
+    \item La Rete Neurale si conferma il modello con la migliore capacità di generalizzazione complessiva, raggiungendo nello scenario peggiore ovvero il 55\% l'Accuracy più elevata dell'intero test (0.826) e una F1-Score di 0.845. L'introduzione del Dropout e dell'EarlyStopping ha impedito efficacemente all'architettura di memorizzare il rumore introdotto dalla ricostruzione dei dati. Si delinea così un interessante compromesso diagnostico: se la Rete Neurale offre la massima precisione globale, la SVM garantisce la massima sicurezza nel ridurre al minimo i casi di mancata diagnosi (Falsi Negativi).
+    
+    \item Sebbene l'albero di decisione si confermi il modello meno performante del gruppo, la potatura applicata tramite i parametri \texttt{max\_depth} e \texttt{min\_samples\_leaf} ne ha modificato il comportamento. A differenza del crollo continuo e verticale registrato in assenza di mitigazione, l'algoritmo regolarizzato presenta un crollo iniziale al 15\% di valori nulli, per poi recuperare e stabilizzarsi in modo resiliente su un'Accuracy vicina allo 0.79 negli scenari a maggiore corruzione (raggiungendo lo 0.793 al 55\%). Questo dimostra che i vincoli strutturali impediscono all'albero di degenerare, garantendogli una soglia prestazionale di sicurezza.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN KNN Robusti/Matrice di Confunsione 0.png}
+    \caption{Matrice di confusione con imputazione KNN e algoritmi regolarizzati (Baseline)}
+    \label{fig:knn_mtr_0}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN KNN Robusti/Matrice di Confunsione 15.png}
+    \caption{Matrice di confusione con imputazione KNN e algoritmi regolarizzati (15\% di valori nulli)}
+    \label{fig:knn_mtr_15}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN KNN Robusti/Matrice di Confunsione 40.png}
+    \caption{Matrice di confusione con imputazione KNN e algoritmi regolarizzati (40\% di valori nulli)}
+    \label{fig:knn_mtr_40}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN/Valori NaN KNN Robusti/Matrice di Confunsione 55.png} 
+    \caption{Matrice di confusione con imputazione KNN e algoritmi regolarizzati (55\% di valori nulli)}
+    \label{fig:knn_mtr_55}
+\end{figure}
+
+Per mitigare il bias di varianza del singolo partizionamento e ottenere una stima reale della capacità di generalizzazione, i modelli ottimizzati sono stati sottoposti a una procedura di K-Fold Cross-Validation (K=5).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Valori NaN/K-Fold/k-fold - con ottimizzazioni KNN.png}
+    \caption{Andamento dell'Accuracy media in Cross-Validation (K=5) post-mitigazione con KNN Imputer.}
+    \label{fig:cv_knn_plot}
+\end{figure}
 
 \begin{table}[H]
 \centering
 \begin{tabular}{lccc}
-\toprule
-\textbf{Livello} & \textbf{SimpleImputer (base)} & \textbf{KNN Imputer} & \textbf{Iterative Imputer} \\
-\midrule
-Baseline (0\%) & 0.818 & 0.823 & 0.823 \\
-Low (15\%) & 0.798 & 0.799 & 0.795 \\
-Medium (40\%) & 0.761 & 0.768 & 0.766 \\
-High (55\%) & 0.693 & 0.723 & 0.739 \\
-\bottomrule
+\hline
+\textbf{Livello Dati Mancanti} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\hline
+Baseline (0\%)  & 0.758 & 0.823 & 0.802 \\
+Low 15\%        & 0.702 & 0.799 & 0.799 \\
+Medium 40\%     & 0.707 & 0.768 & 0.772 \\
+High 55\%       & 0.658 & 0.723 & 0.723 \\
+\hline
 \end{tabular}
-\caption{Accuracy media di CV (SVM) al variare della strategia di imputazione dei valori mancanti.}
-\label{tab:cv_nan_confronto}
+\caption{Accuracy media in K-Fold CV (K=5) per i modelli ottimizzati con KNN Imputer.}
+\label{tab:cv_knn_dati}
 \end{table}
 
-Le strategie di imputazione avanzata (KNN e Iterative Imputer), unite alla regolarizzazione dei modelli, mostrano un beneficio soprattutto ai livelli di rumore più elevati (Medium e High), dove il recupero di informazione tramite le relazioni tra variabili risulta più efficace della semplice sostituzione con la mediana.
+L'analisi dell'Accuracy media calcolata sui cinque fold (Tabella \ref{tab:cv_knn_dati} e Figura \ref{fig:cv_knn_plot}) ridimensiona i valori ottenuti dal singolo test split, offrendo una prospettiva più realistica e rigorosa. Nello specifico, emergono le seguenti dinamiche:
 
-\imgplaceholder{Grafico comparativo (uno per modello) tra le tre strategie di imputazione al variare del livello di rumore, ottenuto tramite \texttt{sns.relplot}}{Confronto tra le strategie di imputazione dei valori mancanti (per modello)}{confronto\_imputazione.png}
+\begin{itemize}
+    \item A differenza della tenuta quasi perfetta registrata nel singolo split, la validazione incrociata evidenzia un degrado fisiologico e progressivo per tutte le architetture. Questo conferma che l'imputazione multivariata, per quanto avanzata, non può ricreare dal nulla l'informazione strutturale perduta: all'aumentare della \textit{data sparsity}, il rumore artificiale introdotto dal KNN finisce inevitabilmente per erodere una parte del segnale clinico utile.
+    
+    \item Nonostante il calo prestazionale, l'approccio combinato di KNN Imputer e regolarizzazione dimostra una buona efficacia nell'evitare il degrado strutturale dei modelli. Nello scenario di degradazione estrema (55\%), la Support Vector Machine e la Rete Neurale mostrano traiettorie di decadimento quasi sovrapponibili, assestandosi entrambe su un'Accuracy media di 0.723. Si tratta di un degrado controllato che mantiene le previsioni significativamente al di sopra della soglia di casualità, confermando la robustezza delle due architetture.
+    
+    \item L'albero di decisione si conferma l'algoritmo intrinsecamente più vulnerabile alla perdita di dati. Pur beneficiando dei parametri di potatura, la sua natura gerarchica lo porta a soffrire maggiormente l'imputazione artificiale, registrando l'Accuracy più bassa in ogni scenario e chiudendo la sperimentazione al 55\% di valori nulli con una media di appena 0.658.
+\end{itemize}
+
+\subsubsection{Imputazione Iterativa}
+
+Come seconda strategia di mitigazione, i modelli regolarizzati sono stati addestrati utilizzando un approccio di imputazione multivariata iterativa (\texttt{Iterative Imputer}). A differenza del KNN, che basa la ricostruzione sulla prossimità spaziale, l'Iterative Imputer modella ciascuna feature mancante come funzione delle altre variabili presenti nel dataset, ripetendo il processo in modo sequenziale (\texttt{max\_iter=10}) per affinare le stime.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Valori NaN Iterative Robusti/plot accuracy ite + rob.png}
+    \caption{Andamento dell'Accuracy con ottimizzazione Iterative Imputer e Regolarizzazione.}
+    \label{fig:acc_iterative}
+\end{figure}
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llcccc}
+\hline
+\textbf{Livello} & \textbf{Modello} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+\textit{Baseline (0\%)} & Decision Tree  & 0.815 & 0.815 & 0.863 & 0.838 \\
+                        & SVM            & 0.826 & 0.792 & 0.931 & 0.856 \\
+                        & Neural Network & 0.832 & 0.845 & 0.853 & 0.849 \\
+\hline
+\textit{Low 15\%}       & Decision Tree  & 0.793 & 0.881 & 0.725 & 0.796 \\
+                        & SVM            & 0.821 & 0.790 & 0.922 & 0.851 \\
+                        & Neural Network & 0.821 & 0.822 & 0.863 & 0.842 \\
+\hline
+\textit{Medium 40\%}    & Decision Tree  & 0.777 & 0.828 & 0.755 & 0.790 \\
+                        & SVM            & 0.821 & 0.785 & 0.931 & 0.852 \\
+                        & Neural Network & 0.826 & 0.830 & 0.863 & 0.846 \\
+\hline
+\textit{High 55\%}      & Decision Tree  & 0.690 & 0.817 & 0.569 & 0.671 \\
+                        & SVM            & 0.815 & 0.779 & 0.931 & 0.848 \\
+                        & Neural Network & 0.804 & 0.844 & 0.794 & 0.818 \\
+\hline
+\end{tabular}
+\caption{Metriche di performance per i modelli ottimizzati con Iterative Imputer.}
+\label{tab:metriche_iterative_dettaglio}
+\end{table}
+
+\begin{itemize}
+    \item L'Iterative Imputer preserva in modo eccellente la separabilità dei dati richiesta dalla SVM. L'Accuracy rimane pressoché costante (tra 0.826 e 0.815) a ogni livello di degradazione. Ancora più notevole è la stabilità della \textit{Recall} (0.931 al 55\% di rumore), a conferma che queste stime permettono al kernel RBF di classificare correttamente quasi tutti i casi positivi (Figura \ref{fig:ite_mtr_55}).
+    
+    \item La Rete Neurale mostra ottime performance fino al 40\% di rumore (0.826), per poi calare a 0.804 al 55\%. A livelli così elevati di corruzione, il rumore generato dall'Iterative Imputer risulta più complesso da gestire per la rete rispetto alle medie locali del KNN, impedendone la corretta estrazione delle feature.
+    
+    \item Il Decision Tree è il modello più penalizzato: al 55 \% di dati mancanti l'Accuracy scende a 0.690 e la \textit{Recall} scende a 0.569. Questo dimostra che la complessa ricostruzione iterativa disturba l'algoritmo, rendendo le sue regole di partizionamento inefficaci per classificare i veri positivi.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN Iterative Robusti/Matrice di Confusione 0.png}
+    \caption{Matrici di confusione con Iterative Imputer e algoritmi regolarizzati (Baseline)}
+    \label{fig:ite_mtr_0}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN Iterative Robusti/Matrice di Confusione 15.png}
+    \caption{Matrici di confusione con Iterative Imputer e algoritmi regolarizzati (15\% di valori nulli)}
+    \label{fig:ite_mtr_15}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN Iterative Robusti/Matrice di Confusione 40.png}
+    \caption{Matrici di confusione con Iterative Imputer e algoritmi regolarizzati (40\% di valori nulli)}
+    \label{fig:ite_mtr_40}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\linewidth]{Valori NaN Iterative Robusti/Matrice di Confusione 55.png}
+    \caption{Matrici di confusione con Iterative Imputer e algoritmi regolarizzati (55\% di valori nulli)}
+    \label{fig:ite_mtr_55}
+\end{figure}
+
+Per validare la reale capacità di generalizzazione dei modelli addestrati sui dati ricostruiti sequenzialmente, è stata applicata anche in questo caso una K-Fold Cross-Validation (K=5).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Valori NaN/K-Fold/k-fold - con ottimizzazioni Iterative.png}
+    \caption{Andamento dell'Accuracy media in Cross-Validation (K=5) post-mitigazione con Iterative Imputer.}
+    \label{fig:cv_iterative_plot}
+\end{figure}
+
+% --- TABELLA CV ITERATIVE IMPUTER ---
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Livello Dati Mancanti} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\hline
+Baseline (0\%)  & 0.758 & 0.823 & 0.800 \\
+Low 15\%        & 0.742 & 0.795 & 0.808 \\
+Medium 40\%     & 0.723 & 0.766 & 0.773 \\
+High 55\%       & 0.685 & 0.739 & 0.745 \\
+\hline
+\end{tabular}
+\caption{Accuracy media in K-Fold CV (K=5) per i modelli ottimizzati con Iterative Imputer.}
+\label{tab:cv_iterative_dati}
+\end{table}
+
+L'analisi dell'Accuracy media calcolata sui cinque fold (Tabella \ref{tab:cv_iterative_dati} e Figura \ref{fig:cv_iterative_plot}) conferma il prevedibile deterioramento delle metriche all'aumentare del rumore, ma mostra un quadro prestazionale decisamente superiore rispetto all'imputazione spaziale (KNN). In particolare:
+
+\begin{itemize}
+    \item L'imputazione iterativa si conferma la tecnica più robusta per la generalizzazione. Sebbene il KNN sembrasse superiore nel singolo test estremo, la validazione incrociata dimostra che l'Iterative Imputer garantisce una stabilità nettamente maggiore, permettendo ai modelli di individuare pattern validi in modo costante.
+    
+    \item La Rete Neurale e la SVM mostrano un degrado molto contenuto: nello scenario estremo (55 \%), mantengono metriche eccellenti (0.745 e 0.739), superando il KNN di oltre due punti percentuali. Ciò conferma che l'approccio iterativo preserva il segnale clinico nettamente meglio della semplice media spaziale.
+    
+    \item Pur confermandosi il modello meno stabile, anche il Decision Tree trae un chiaro vantaggio da questa tecnica. Al 55\% di valori nulli raggiunge un'Accuracy di 0.685 (contro lo 0.658 del KNN), poiché la ricostruzione multivariata dei dati gli permette di generare regole di classificazione molto più coerenti
+\end{itemize}
+
+Per sintetizzare visivamente l'impatto delle diverse tecniche di mitigazione, la Figura \ref{fig:confronto_kfold_nan} mostra il confronto diretto dell'Accuracy in Cross-Validation tra l'approccio di base (SimpleImputer) e le due strategie robuste (KNN e Iterative Imputer).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Valori NaN/K-Fold/Confronto k-fold s k i.png}
+    \caption{Confronto delle performance in K-Fold CV tra le diverse strategie di imputazione al variare dei dati mancanti.}
+    \label{fig:confronto_kfold_nan}
+\end{figure}
+
+Dall'osservazione dei tre scenari emergono dinamiche ben distinte:
+
+\begin{itemize}
+    \item Nel caso del Decision Tree, l'imputazione iterativa (linea verde) si rivela la scelta ottimale per mantenere un andamento stabile e controllato del degrado prestazionale. Analizzando l'imputer di base (linea rossa), si osserva un calo lineare fino al 40\% di valori nulli, seguito da un'inaspettata e anomala risalita al 55\%; questo comportamento evidenzia l'imprevedibilità e l'instabilità dell'approccio semplice su un modello gerarchico.
+    
+    \item Per la Support Vector Machine, il grafico illustra una chiara gerarchia d'efficacia: il SimpleImputer è la tecnica che si comporta peggio, subendo un crollo severo nello scenario estremo. L'applicazione del KNN Imputer ne migliora sensibilmente la tenuta, ma è con il modello iterativo che l'algoritmo ottiene la massima stabilità predittiva.
+    
+    \item Le Reti Neurali si confermano l'architettura più robusta in assoluto, mantenendosi sempre al di sopra della soglia dello 0.720 anche nello scenario più critico. Analizzando il dettaglio delle imputazioni, si nota che il KNN risulta essere la strategia meno performante, il Simple Imputer si posiziona su livelli intermedi, mentre l'Iterative Imputer garantisce anche in questo caso il risultato migliore in assoluto.
+\end{itemize}
+
+In conclusione, l'analisi dimostra che tutti e tre i modelli raggiungono le performance ottimali utilizzando l'Iterative Imputer. Questa tecnica si rivela in modo inequivocabile la strategia di imputazione migliore e più sicura da adottare quando si elaborano dataset caratterizzati da un alto tasso di valori nulli.
 
 \subsection{Mitigazione dei valori duplicati}
 \label{sec:dedup}
@@ -563,8 +1243,8 @@ Le strategie di imputazione avanzata (KNN e Iterative Imputer), unite alla regol
 Sono state confrontate due strategie per la gestione dei duplicati:
 
 \begin{itemize}
-    \item \textbf{Rimozione dei duplicati}: identificazione ed eliminazione delle righe identiche (\texttt{drop\_duplicates()}), per evitare che il modello attribuisca peso eccessivo a osservazioni ripetute e per prevenire il \emph{data leakage} in fase di validazione. Applicando questa tecnica, il training set torna, per tutti i livelli, alla dimensione originale di 735 righe (Tabella~\ref{tab:dedup_rows});
-    \item \textbf{Aggregazione intelligente}: anziché rimuovere semplicemente le righe duplicate, si raggruppano le osservazioni identiche e si assegna come etichetta la \emph{moda} del target tra le occorrenze duplicate, tecnica utile quando i duplicati presentano etichette discordanti (rumore di etichettatura).
+    \item \textbf{Rimozione dei duplicati}: identificazione ed eliminazione delle righe identiche (\texttt{drop\_duplicates()}), per evitare che il modello attribuisca peso eccessivo a osservazioni ripetute e per prevenire il \emph{data leakage} in fase di validazione. Applicando questa tecnica, il training set torna, per tutti i livelli, all'esatta dimensione originale di 735 righe (Tabella~\ref{tab:dedup_rows});
+    \item \textbf{Aggregazione intelligente}: anziché rimuovere semplicemente le righe duplicate, si raggruppano le osservazioni identiche e si assegna come etichetta la \emph{moda} del target tra le occorrenze duplicate. Questa tecnica risulta particolarmente utile quando i duplicati presentano etichette discordanti (rumore di etichettatura).
 \end{itemize}
 
 \begin{table}[H]
@@ -573,7 +1253,7 @@ Sono state confrontate due strategie per la gestione dei duplicati:
 \toprule
 \textbf{Livello} & \textbf{Righe rimosse} & \textbf{Dimensione finale} \\
 \midrule
-Baseline (0\%) & 1 & 735 \\
+Baseline (0\%) & 0 & 735 \\
 Low (15\%) & 111 & 735 \\
 Medium (40\%) & 295 & 735 \\
 High (55\%) & 405 & 735 \\
@@ -583,11 +1263,19 @@ High (55\%) & 405 & 735 \\
 \label{tab:dedup_rows}
 \end{table}
 
-Il grafico seguente confronta, per la SVM, la cross-validation "ottimistica" calcolata sui dati con duplicati (affetta da \emph{leakage}) con quella "corretta" ottenuta dopo la rimozione e dopo l'aggregazione intelligente.
+Il grafico seguente confronta l'accuratezza media ottenuta tramite Cross-Validation (5-Fold) sui dati grezzi con duplicati rispetto a quella ottenuta applicando le strategie di pulizia. 
 
-\imgplaceholder{Grafico a linee di confronto tra CV con leakage (duplicati non gestiti), CV post-rimozione e CV post-aggregazione intelligente, per la SVM, ai tre livelli di rumore}{Confronto tra le strategie di gestione dei duplicati in Cross-Validation (SVM)}{confronto\_duplicati\_cv.png}
+\begin{figure}[H]
+            \centering
+            % Assicurati di salvare il nuovo grafico con questo nome nella tua cartella immagini
+            \includegraphics[width=1\textwidth]{confronto_cv_dup_pre_post.png} 
+            \caption{Confronto tra le strategie di gestione dei duplicati in Cross-Validation per i tre modelli analizzati.}
+    \label{fig:confronto_cv_dup_pre_post}
+\end{figure}
 
-Come atteso, la CV calcolata sui dati con duplicati non gestiti sovrastima sistematicamente le reali prestazioni del modello; le strategie di rimozione e aggregazione restituiscono invece stime più realistiche e coerenti con le prestazioni osservate sul test set pulito, dimostrando l'importanza di riconoscere e correggere il data leakage introdotto dai duplicati prima di ogni fase di validazione.
+Come si evince dalla Figura~\ref{fig:confronto_cv_dup_pre_post}, la valutazione sui dati non trattati (linea tratteggiata rossa) soffre di un evidente fenomeno di \emph{data leakage}. All'aumentare della percentuale di duplicati, l'accuratezza della Cross-Validation aumenta fittiziamente (visibile in particolare nei modelli più complessi come la SVM e le Reti Neurali). Questo accade perché le stesse osservazioni finiscono per essere presenti simultaneamente sia nei fold di addestramento che in quello di validazione, permettendo al modello di riconoscere pattern già visti anziché generalizzare su dati nuovi.
+
+Al contrario, le strategie di rimozione e aggregazione restituiscono stime affidabili e non distorte. Poiché entrambe le tecniche riescono a identificare e neutralizzare completamente le righe ridondanti — riconducendo il training set all'esatta composizione della Baseline originale (Tabella~\ref{tab:dedup_rows}) — le curve di accuratezza post-regolarizzazione risultano perfettamente piatte e costanti al variare del livello di duplicazione iniziale. Questo andamento dimostra matematicamente l'efficacia della pulizia e la necessità di gestire i duplicati \emph{prima} di qualsiasi fase di validazione.
 
 \subsection{Mitigazione dei dati sporchi}
 
@@ -617,99 +1305,158 @@ High (55\%) & 16 \\
 \label{tab:pca_components}
 \end{table}
 
-\imgplaceholder{Grafico della varianza spiegata cumulativa in funzione del numero di componenti PCA, con soglia del 95\% evidenziata, per ciascun livello di rumore (4 grafici, uno per livello)}{Analisi PCA -- Varianza cumulativa spiegata per livello di rumore}{pca\_varianza\_cumulativa.png}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Ottimizzazioni/plot accuracy dirty ott.png}
+    \caption{Andamento dell'Accuracy con pipeline robusta applicata al rumore gaussiano e di swap.}
+    \label{fig:acc_dirty_robusta}
+\end{figure}
 
-La Tabella~\ref{tab:cv_dirty_robust} riporta l'accuracy media di cross-validation ottenuta con la pipeline robusta (RobustScaler + PCA + modelli regolarizzati), da confrontare con i valori di Tabella~\ref{tab:cv_dirty_base} ottenuti senza tecniche di mitigazione.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llcccc}
+\hline
+\textbf{Livello Rumore} & \textbf{Modello} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+\hline
+\textit{Baseline (0\%)} & Decision Tree  & 0.777 & 0.748 & 0.902 & 0.818 \\
+                        & SVM            & 0.804 & 0.784 & 0.892 & 0.835 \\
+                        & Neural Network & 0.821 & 0.835 & 0.843 & 0.839 \\
+\hline
+\textit{Low 15\%}       & Decision Tree  & 0.750 & 0.780 & 0.765 & 0.772 \\
+                        & SVM            & 0.804 & 0.784 & 0.892 & 0.835 \\
+                        & Neural Network & 0.826 & 0.824 & 0.873 & 0.848 \\
+\hline
+\textit{Medium 40\%}    & Decision Tree  & 0.701 & 0.747 & 0.696 & 0.721 \\
+                        & SVM            & 0.777 & 0.775 & 0.843 & 0.808 \\
+                        & Neural Network & 0.777 & 0.802 & 0.794 & 0.798 \\
+\hline
+\textit{High 55\%}      & Decision Tree  & 0.723 & 0.787 & 0.686 & 0.733 \\
+                        & SVM            & 0.717 & 0.736 & 0.765 & 0.750 \\
+                        & Neural Network & 0.696 & 0.735 & 0.706 & 0.720 \\
+\hline
+\end{tabular}
+\caption{Metriche di performance (test set) per i modelli addestrati con pipeline robusta (RobustScaler + PCA) sui dati con rumore attivo.}
+\label{tab:metriche_dirty_robusti}
+\end{table}
+
+
+Le metriche (Tabella \ref{tab:metriche_dirty_robusti} e Figura \ref{fig:acc_dirty_robusta}) confermano che il rumore attivo è molto più distruttivo della semplice assenza di dati. Pur applicando una robusta pipeline di filtraggio, il degrado prestazionale è marcato:
+
+\begin{itemize}
+    \item La Support Vector Machine resta la più resiliente fino a livelli intermedi di rumore (0.804 al 15\% e 0.777 al 40\%). Tuttavia, al 55\% di corruzione, la distorsione geometrica supera le capacità di filtraggio della PCA: l'Accuracy crolla a 0.717 e la \textit{Recall} scende drasticamente a 0.765.
+    
+    \item La Rete Neurale mostra l'andamento più drammatico. Dopo un picco iniziale al 15\% (0.826), subisce un collasso verticale, chiudendo come peggior modello al 55\% (0.696). Con oltre metà dei dati contraffatti, la rete finisce per assimilare il rumore come pattern valido, disorientando i pesi sinaptici in fase di addestramento.
+
+    \item Il Decision Tree conferma la sua instabilità. Il finto "rimbalzo" dell'Accuracy al 55\% (0.723) è smentito dalla \textit{Recall}, che crolla a 0.686 (Figura \ref{fig:dirty_mtr_55}). Di fatto, il modello sta perdendo quasi un terzo dei veri positivi, rendendo le sue regole di split totalmente inaffidabili.
+\end{itemize}
+
+% --- MATRICI DI CONFUSIONE DATI SPORCHI ---
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Ottimizzazioni/Matrice di Confusione 0.png}
+    \caption{Matrici di confusione dei modelli con pipeline robusta sui dati originali (Baseline 0\%).}
+    \label{fig:dirty_mtr_0}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Ottimizzazioni/Matrice di Confusione 15.png}
+    \caption{Matrici di confusione dei modelli con pipeline robusta al 15\% di rumore (gaussiano e swap).}
+    \label{fig:dirty_mtr_15}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Ottimizzazioni/Matrice di Confusione 40.png}
+    \caption{Matrici di confusione dei modelli con pipeline robusta al 40\% di rumore (gaussiano e swap).}
+    \label{fig:dirty_mtr_40}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{Ottimizzazioni/Matrice di Confusione 55.png}
+    \caption{Matrici di confusione dei modelli con pipeline robusta al 55\% di rumore (gaussiano e swap). Si noti l'elevato numero di falsi negativi nel Decision Tree.}
+    \label{fig:dirty_mtr_55}
+\end{figure}
+
+Per ottenere una stima più rigorosa della reale capacità di generalizzazione della pipeline robusta, i modelli sono stati sottoposti a una K-Fold Cross-Validation (K=5).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1.0\textwidth]{k-fold pipe ott.png}
+    \caption{Andamento dell'Accuracy media in Cross-Validation (K=5) per i modelli addestrati con pipeline robusta al variare del rumore gaussiano e di swap.}
+    \label{fig:cv_dirty_plot}
+\end{figure}
 
 \begin{table}[H]
 \centering
 \begin{tabular}{lccc}
-\toprule
-\textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
-\midrule
-Baseline (0\%) & 0.745 & 0.811 & 0.798 \\
-Low (15\%) & 0.726 & 0.769 & 0.750 \\
-Medium (40\%) & 0.669 & 0.698 & 0.704 \\
-High (55\%) & 0.689 & 0.708 & 0.702 \\
-\bottomrule
+\hline
+\textbf{Livello Rumore} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\hline
+Baseline (0\%)  & 0.745 & 0.811 & 0.791 \\
+Low 15\%        & 0.726 & 0.769 & 0.753 \\
+Medium 40\%     & 0.668 & 0.698 & 0.700 \\
+High 55\%       & 0.689 & 0.708 & 0.707 \\
+\hline
 \end{tabular}
-\caption{Accuracy media di CV (5-fold) con pipeline robusta (RobustScaler + PCA + regolarizzazione) sui dati sporchi.}
-\label{tab:cv_dirty_robust}
+\caption{Accuracy media in K-Fold CV (K=5) per la pipeline robusta applicata ai dati sporchi.}
+\label{tab:cv_dirty_dati}
 \end{table}
 
-Il confronto tra le due tabelle mostra come, per questa specifica tipologia di rumore, il beneficio della pipeline robusta risulti contenuto e non sempre univoco: ai livelli Low e High le prestazioni risultano leggermente superiori rispetto al caso non regolarizzato, mentre al livello Medium risultano sostanzialmente comparabili. Questo suggerisce che il rumore gaussiano applicato direttamente sulle feature, unito allo swap dei valori binari, alteri in modo diffuso la struttura informativa del dataset, rendendo difficile una sua completa mitigazione tramite le sole tecniche di preprocessing lineare (scaling e riduzione dimensionale).
+I risultati medi sui cinque fold (Tabella \ref{tab:cv_dirty_dati} e Figura \ref{fig:cv_dirty_plot}) ridefiniscono le dinamiche osservate nel test singolo e mostrano un comportamento predittivo particolare legato all'intensità del rumore:
+
+\begin{itemize}
+    \item Il punto di minima performance assoluta si registra per tutte le architetture al livello di corruzione \textit{Medium (40\%)}. In questa fascia, il mix tra rumore gaussiano e swap parziale delle etichette genera un'elevata entropia nel dataset, disturbando le capacità di estrazione delle feature.
+    
+    \item Passando allo scenario estremo \textit{High (55\%)}, le reazioni dei modelli si diversificano. La Support Vector Machine e la Rete Neurale registrano una risalita puramente marginale, stabilizzandosi di fatto in area 0.70. Invece, il Decision Tree evidenzia un risalita prestazionale più marcata, risalendo da 0.668 a 0.689.
+    
+    \item Il falso recupero del Decision Tree mostra la vulnerabilità strutturale: nonostante la forte potatura, i suoi split rigidi seguono il "segnale invertito". Superato il 50\% di corruzione, la classe errata diventa maggioritaria e l'albero si limita a invertire le regole dei nodi. Al contrario, SVM e Rete Neurale, dotate di confini decisionali continui, riescono a mantenere ancora una certa resistenza.
+\end{itemize}
+
+In conclusione, l'immissione di dati sporchi si conferma la criticità più severa per l'apprendimento automatizzato. Nonostante la mitigazione utilizzata (PCA e regolarizzazione), l'analisi delinea una chiara gerarchia architetturale: la Support Vector Machine si afferma come l'algoritmo più resiliente e affidabile, seguita dalla Rete Neurale, mentre il Decision Tree risulta strutturalmente inadeguato a operare in contesti ad elevata corruzione informativa.
 
 % ======================================================================
 \section{Confronto finale tra le strategie}
 % ======================================================================
 
-Per fornire una visione d'insieme, i risultati di tutte le strategie di gestione del rumore analizzate sono stati raccolti in un unico confronto grafico, organizzato per tipologia di rumore (valori mancanti con KNN Imputer, valori mancanti con Iterative Imputer, duplicati rimossi, duplicati aggregati, dati sporchi con pipeline robusta) e per modello (Decision Tree, SVM, Neural Network), al variare del livello di rumore.
+Per fornire una visione d'insieme, i risultati di tutte le strategie di gestione del rumore sono stati raccolti in un unico confronto grafico (Figura \ref{fig:confronto_finale}), organizzato per tipologia di rumore e per modello.
 
-\imgplaceholder{Griglia di grafici a linee (\texttt{sns.FacetGrid}), un pannello per ciascuna strategia di pulizia dei dati, con l'accuracy dei tre modelli sull'asse y e il livello di rumore sull'asse x}{Confronto finale delle prestazioni dei modelli robusti per strategia di pulizia dei dati}{confronto\_finale.png}
+\begin{figure}[H]
+            \centering
+            \includegraphics[width=1\textwidth]{confronto_finale.png} 
+            \caption{Confronto finale delle prestazioni dei modelli robusti per strategia
+di pulizia dei dati}
+    \label{fig:confronto_finale}
+\end{figure}
 
-Dall'analisi complessiva emergono le seguenti osservazioni:
+Dall'osservazione visiva delle curve di degradazione emergono tre dinamiche chiave:
+
 \begin{itemize}
-    \item la \textbf{SVM} risulta, in generale, il modello più performante e più stabile al crescere del rumore, specialmente per i valori mancanti e i dati sporchi;
-    \item i \textbf{valori mancanti} sono la tipologia di rumore più facilmente mitigabile, grazie a tecniche di imputazione relativamente mature (KNN, Iterative Imputer);
-    \item i \textbf{duplicati}, se non correttamente identificati, non danneggiano le prestazioni reali del modello ma \textbf{falsano la stima} ottenuta tramite cross-validation (data leakage); una volta rimossi o aggregati correttamente, la valutazione torna realistica;
-    \item i \textbf{dati sporchi} (rumore gaussiano e inversione di valori binari) costituiscono la sfida più difficile da mitigare, poiché alterano silenziosamente il contenuto informativo delle feature senza essere identificabili come nel caso dei valori mancanti.
+    \item La Support Vector Machine domina i grafici, confermando visivamente la sua superiore stabilità trasversale rispetto agli altri modelli.
+    \item L'assenza di dati (NaN) e i duplicati presentano curve post-mitigazione piatte e controllate, a dimostrazione che le tecniche di imputazione (KNN/Iterative) e di pulizia neutralizzano quasi totalmente il problema.
+    \item Il riquadro dei Dati Sporchi è l'unico a mostrare un crollo ineliminabile delle curve (nello scenario \textit{High}), confermandosi visivamente come l'ostacolo più arduo da filtrare persino per la pipeline robusta.
 \end{itemize}
 
 % ======================================================================
 \section{Conclusioni}
 % ======================================================================
 
-Il progetto ha permesso di analizzare in modo sistematico l'impatto di tre diverse tipologie di rumore (valori mancanti, duplicati, dati sporchi) sulle prestazioni di tre modelli di Machine Learning (Decision Tree, SVM, rete neurale), applicati a un problema reale di classificazione in ambito medicale.
+Il progetto ha permesso di analizzare in modo sistematico l'impatto di tre diverse tipologie di corruzione dei dati (valori mancanti, duplicati, dati sporchi) sulle prestazioni di tre architetture di Machine Learning (Decision Tree, SVM, Rete Neurale) in un dominio diagnostico.
 
-I risultati mostrano che:
-\begin{enumerate}
-    \item l'impatto del rumore \textbf{non è uniforme}: i valori mancanti causano un degrado moderato e ben gestibile tramite imputazione, i duplicati non peggiorano le prestazioni reali ma possono falsare la validazione se non gestiti correttamente, mentre i dati sporchi rappresentano la minaccia più seria e più difficile da correggere;
-    \item le tecniche di \textbf{regolarizzazione dei modelli} (pruning per il Decision Tree, soft margin per la SVM, dropout ed early stopping per la rete neurale) contribuiscono a contenere l'overfitting e, in generale, a rendere i modelli più stabili al crescere del rumore;
-    \item la \textbf{cross-validation} si conferma uno strumento fondamentale per la valutazione dei modelli, ma richiede attenzione: in presenza di duplicati non gestiti, può fornire stime eccessivamente ottimistiche a causa del data leakage;
-    \item non esiste un'unica tecnica di preprocessing "universale": la scelta della strategia più efficace dipende dalla natura specifica del rumore presente nei dati.
-\end{enumerate}
+I risultati dimostrano che:
 
-Come possibile sviluppo futuro, si potrebbero esplorare tecniche di rilevamento automatico del tipo di rumore presente nel dataset, così da selezionare in modo adattivo la strategia di preprocessing più adeguata, oltre a estendere l'analisi ad altri modelli (es. ensemble methods come Random Forest o Gradient Boosting) e ad altri dataset di dominio diverso, per verificare la generalizzabilità delle conclusioni ottenute.
+\begin{itemize}
+    \item l'impatto del rumore è fortemente eterogeneo: la semplice assenza di dati (NaN) è arginabile algoritmicamente, l'alterazione dei valori (dati sporchi) distrugge irreversibilmente il segnale informativo, mentre i duplicati agiscono in modo ingannevole causando \textit{data leakage} e sovrastimando le performance se non rimossi prima della Cross-Validation;
+    \item l'impiego di tecniche di regolarizzazione (come il pruning, l'impostazione di un \textit{soft margin}, il dropout e l'early stopping) risulta cruciale e determinante per impedire ai modelli di andare in overfitting sul rumore artificiale;
+    \item non esiste un approccio di preprocessing universale, in quanto la mitigazione deve essere rigorosamente mirata alla specifica anomalia: ciò che salva un modello dai valori mancanti (come le tecniche di imputazione) non ha infatti alcuna utilità contro lo swap delle etichette.
+\end{itemize}
 
-% ======================================================================
-\appendix
-\section{Elenco delle immagini da inserire manualmente}
-% ======================================================================
+Come possibile sviluppo futuro, si potrebbero esplorare tecniche di rilevamento automatico delle anomalie per selezionare in modo adattivo la strategia di preprocessing, oltre a estendere l'analisi a modelli \textit{ensemble} (es. Random Forest o Gradient Boosting) per verificarne la generalizzabilità.
 
-La Tabella~\ref{tab:elenco_immagini} riassume, in ordine di comparizione nel documento, tutte le figure segnalate come "da inserire manualmente". Per ciascuna immagine è indicata la cella del notebook da cui è generata, così da poterla ritrovare ed esportare (ad esempio come screenshot o tramite \texttt{plt.savefig(...)} prima di \texttt{plt.show()}).
+\bigbreak
+In conclusione, il lavoro dimostra che la qualità del dato e la sua corretta pulizia incidono sul successo predittivo in misura pari, se non superiore, alla scelta dell'algoritmo stesso.
 
-\begin{table}[H]
-\centering
-\small
-\begin{tabular}{p{5.2cm}p{3.5cm}p{5.2cm}}
-\toprule
-\textbf{Nome file suggerito} & \textbf{Sezione} & \textbf{Contenuto} \\
-\midrule
-distribuzione\_target.png & EDA & Countplot target binario \\
-matrice\_correlazione.png & EDA & Heatmap correlazione \\
-istogrammi\_variabili.png & EDA & Istogrammi variabili numeriche \\
-cm\_dt\_baseline.png & Decision Tree & Confusion matrix (non potato) \\
-albero\_non\_potato.png & Decision Tree & Plot albero non potato \\
-cm\_dt\_pruned.png & Decision Tree & Confusion matrix (potato) \\
-albero\_potato.png & Decision Tree & Plot albero potato \\
-nn\_accuracy\_epoche.png & Neural Network & Accuracy vs epoche \\
-nn\_loss\_epoche.png & Neural Network & Loss vs epoche \\
-cm\_nn\_baseline.png & Neural Network & Confusion matrix \\
-cm\_svm\_baseline.png & SVM & Confusion matrix \\
-confronto\_accuracy\_baseline.png & Confronto baseline & Barplot accuracy modelli \\
-cm\_nan\_livelli.png & Impatto rumore & Confusion matrix per livello NaN \\
-cm\_dup\_livelli.png & Impatto rumore & Confusion matrix per livello duplicati \\
-cm\_dirty\_livelli.png & Impatto rumore & Confusion matrix per livello dati sporchi \\
-confronto\_imputazione.png & Mitigazione NaN & Confronto strategie imputazione \\
-confronto\_duplicati\_cv.png & Mitigazione duplicati & Confronto leakage/rimozione/aggregazione \\
-pca\_varianza\_cumulativa.png & Mitigazione dati sporchi & Varianza cumulativa PCA \\
-confronto\_finale.png & Confronto finale & FacetGrid riepilogo generale \\
-\bottomrule
-\end{tabular}
-\caption{Elenco riepilogativo delle immagini da inserire manualmente nel documento.}
-\label{tab:elenco_immagini}
-\end{table}
-
-\end{document}
 
 \end{document}
