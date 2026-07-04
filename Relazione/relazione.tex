@@ -722,28 +722,28 @@ confusione per i quattro livelli sono riportate nelle Figure~\ref{fig:cm_dup_bas
 
 \begin{figure}[H]
     \centering
-    %\includegraphics[width=0.95\textwidth]{cm_dup_baseline.png}
+    \includegraphics[width=0.95\textwidth]{cm_dup_baseline.png}
     \caption{Matrice di confusione con il training set originale (Baseline, 0\% duplicati)}
     \label{fig:cm_dup_baseline}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    %\includegraphics[width=0.95\textwidth]{cm_dup_low15.png}
+    \includegraphics[width=0.95\textwidth]{cm_dup_low15.png}
     \caption{Matrice di confusione con il 15\% di righe duplicate}
     \label{fig:cm_dup_low15}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    %\includegraphics[width=0.95\textwidth]{cm_dup_medium40.png}
+    \includegraphics[width=0.95\textwidth]{cm_dup_medium40.png}
     \caption{Matrice di confusione con il 40\% di righe duplicate}
     \label{fig:cm_dup_medium40}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    %\includegraphics[width=0.95\textwidth]{cm_dup_high55.png}
+    \includegraphics[width=0.95\textwidth]{cm_dup_high55.png}
     \caption{Matrice di confusione con il 55\% di righe duplicate}
     \label{fig:cm_dup_high55}
 \end{figure}
@@ -796,7 +796,7 @@ mostrare alcun trend di degrado sistematico.
 
 \begin{figure}[H]
     \centering
-    %\includegraphics[width=0.75\textwidth]{accuracy_test_duplicati.png}
+    \includegraphics[width=0.75\textwidth]{accuracy_test_duplicati.png}
     \caption{Andamento dell'Accuracy sul test set al variare del livello di duplicazione}
     \label{fig:acc_dup_test}
 \end{figure}
@@ -1237,15 +1237,19 @@ Dall'osservazione dei tre scenari emergono dinamiche ben distinte:
 
 In conclusione, l'analisi dimostra che tutti e tre i modelli raggiungono le performance ottimali utilizzando l'Iterative Imputer. Questa tecnica si rivela in modo inequivocabile la strategia di imputazione migliore e più sicura da adottare quando si elaborano dataset caratterizzati da un alto tasso di valori nulli.
 
+
+
 \subsection{Mitigazione dei valori duplicati}
 \label{sec:dedup}
 
-Sono state confrontate due strategie per la gestione dei duplicati:
+A differenza delle altre tipologie di rumore, la presenza di duplicati non degrada in modo diretto le prestazioni misurate sul test set indipendente (Sezione precedente), bensì inquina la stima ottenuta tramite Cross-Validation, alterando la percezione della reale capacità di generalizzazione dei modelli. La mitigazione deve quindi agire a monte della procedura di validazione, sulla composizione stessa del training set. Sono state confrontate due strategie, applicate in combinazione con la medesima pipeline di modelli utilizzata nella Sezione precedente:
 
 \begin{itemize}
-    \item \textbf{Rimozione dei duplicati}: identificazione ed eliminazione delle righe identiche (\texttt{drop\_duplicates()}), per evitare che il modello attribuisca peso eccessivo a osservazioni ripetute e per prevenire il \emph{data leakage} in fase di validazione. Applicando questa tecnica, il training set torna, per tutti i livelli, all'esatta dimensione originale di 735 righe (Tabella~\ref{tab:dedup_rows});
-    \item \textbf{Aggregazione intelligente}: anziché rimuovere semplicemente le righe duplicate, si raggruppano le osservazioni identiche e si assegna come etichetta la \emph{moda} del target tra le occorrenze duplicate. Questa tecnica risulta particolarmente utile quando i duplicati presentano etichette discordanti (rumore di etichettatura).
+    \item \textbf{Rimozione dei duplicati}: identificazione ed eliminazione delle righe integralmente identiche (\texttt{drop\_duplicates()}, applicato a feature e target congiuntamente), per evitare che il modello attribuisca peso eccessivo a osservazioni ripetute e, soprattutto, per impedire che copie della stessa riga finiscano simultaneamente nei fold di training e di validazione;
+    \item \textbf{Aggregazione intelligente}: anziché rimuovere semplicemente le righe duplicate, le osservazioni identiche vengono raggruppate sulla base delle sole variabili predittive, assegnando come etichetta la \emph{moda} del target tra le occorrenze duplicate. Questa tecnica è pensata per gestire anche i casi in cui i duplicati presentino etichette discordanti (rumore di etichettatura), scenario che non si verifica in questo esperimento poiché la duplicazione è stata simulata per copia esatta della riga, target incluso.
 \end{itemize}
+
+Applicando entrambe le tecniche, il training set torna, per tutti i livelli di rumore, all'esatta dimensione originale di 735 righe (Tabella~\ref{tab:dedup_rows}).
 
 \begin{table}[H]
 \centering
@@ -1263,19 +1267,131 @@ High (55\%) & 405 & 735 \\
 \label{tab:dedup_rows}
 \end{table}
 
-Il grafico seguente confronta l'accuratezza media ottenuta tramite Cross-Validation (5-Fold) sui dati grezzi con duplicati rispetto a quella ottenuta applicando le strategie di pulizia. 
+\subsubsection{Rimozione dei duplicati}
+
+La prima strategia elimina, ad ogni fold della 5-Fold Cross-Validation, le righe integralmente duplicate prima dell'addestramento. Le matrici di confusione aggregate sui 5 fold sono riportate nelle Figure~\ref{fig:cm_dedup_baseline}--\ref{fig:cm_dedup_high55}.
 
 \begin{figure}[H]
-            \centering
-            % Assicurati di salvare il nuovo grafico con questo nome nella tua cartella immagini
-            \includegraphics[width=1\textwidth]{confronto_cv_dup_pre_post.png} 
-            \caption{Confronto tra le strategie di gestione dei duplicati in Cross-Validation per i tre modelli analizzati.}
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_dedup_baseline.png}
+    \caption{Matrici di confusione (CV aggregata) dopo rimozione dei duplicati -- Baseline (0\%)}
+    \label{fig:cm_dedup_baseline}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_dedup_low15.png}
+    \caption{Matrici di confusione (CV aggregata) dopo rimozione dei duplicati -- 15\%}
+    \label{fig:cm_dedup_low15}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_dedup_medium40.png}
+    \caption{Matrici di confusione (CV aggregata) dopo rimozione dei duplicati -- 40\%}
+    \label{fig:cm_dedup_medium40}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_dedup_high55.png}
+    \caption{Matrici di confusione (CV aggregata) dopo rimozione dei duplicati -- 55\%}
+    \label{fig:cm_dedup_high55}
+\end{figure}
+
+Poiché la rimozione delle righe identiche riporta il training set esattamente alla sua composizione originale a ogni livello di duplicazione iniziale, le matrici ottenute nei quattro scenari risultano pressoché indistinguibili: per Decision Tree e SVM, algoritmi deterministici a parità di \texttt{random\_state}, i valori sono numericamente identici; la Rete Neurale mostra invece oscillazioni marginali, imputabili unicamente alla componente stocastica dell'inizializzazione dei pesi e non al livello di rumore. Questo conferma che il problema introdotto dai duplicati non è di natura predittiva, ma puramente procedurale: rimossa la ridondanza, ciascun modello si comporta esattamente come nello scenario privo di rumore.
+
+\subsubsection{Aggregazione intelligente}
+
+La seconda strategia raggruppa le osservazioni identiche sulla base delle sole variabili predittive e assegna come etichetta la moda del target tra le occorrenze duplicate. Le matrici di confusione ottenute sono riportate nelle Figure~\ref{fig:cm_agg_baseline}--\ref{fig:cm_agg_high55}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_agg_baseline.png}
+    \caption{Matrici di confusione (CV aggregata) dopo aggregazione intelligente -- Baseline (0\%)}
+    \label{fig:cm_agg_baseline}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_agg_low15.png}
+    \caption{Matrici di confusione (CV aggregata) dopo aggregazione intelligente -- 15\%}
+    \label{fig:cm_agg_low15}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_agg_medium40.png}
+    \caption{Matrici di confusione (CV aggregata) dopo aggregazione intelligente -- 40\%}
+    \label{fig:cm_agg_medium40}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{cm_agg_high55.png}
+    \caption{Matrici di confusione (CV aggregata) dopo aggregazione intelligente -- 55\%}
+    \label{fig:cm_agg_high55}
+\end{figure}
+
+Trattandosi in questo esperimento di una duplicazione per copia esatta, priva di rumore di etichettatura, l'aggregazione tramite moda recupera esattamente lo stesso sottoinsieme di righe uniche ottenuto con la semplice rimozione: le due strategie, pur concettualmente distinte, convergono verso risultati numericamente equivalenti. La Tabella~\ref{tab:cv_dedup_agg} riporta l'Accuracy media di Cross-Validation ottenuta dopo la pulizia, valida indistintamente per entrambe le tecniche.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Livello} & \textbf{Decision Tree} & \textbf{SVM} & \textbf{Neural Network} \\
+\midrule
+Baseline (0\%) & 0.763 & 0.822 & 0.811 \\
+Low (15\%)     & 0.763 & 0.822 & 0.797 \\
+Medium (40\%)  & 0.763 & 0.822 & 0.803 \\
+High (55\%)    & 0.763 & 0.822 & 0.801 \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy media di CV (5-fold) dopo pulizia dei duplicati (rimozione/aggregazione, dati equivalenti).}
+\label{tab:cv_dedup_agg}
+\end{table}
+
+L'analisi della tabella conferma quanto osservato graficamente:
+
+\begin{itemize}
+    \item Il Decision Tree e la SVM mostrano un'Accuracy media perfettamente costante nei quattro scenari (rispettivamente 0.763 e 0.822): una volta eliminata la ridondanza, l'algoritmo lavora sempre sullo stesso training set, indipendentemente dal livello di duplicazione simulato in partenza;
+    \item La Rete Neurale presenta un'oscillazione contenuta tra 0.797 e 0.811, interamente attribuibile alla natura stocastica dell'addestramento (inizializzazione dei pesi non vincolata da un seed) e non a un reale effetto residuo del rumore;
+    \item Rispetto ai valori artificialmente elevati restituiti dalla Cross-Validation eseguita sui dati grezzi (Tabella~\ref{tab:cv_dup_base}), entrambe le strategie di pulizia restituiscono stime più basse ma affidabili, coerenti con l'Accuracy osservata sul test set indipendente (Tabella~\ref{tab:dup_test}).
+\end{itemize}
+
+\subsubsection{Confronto tra le strategie e conclusioni}
+
+Il grafico seguente confronta l'accuratezza media ottenuta tramite Cross-Validation sui dati grezzi con duplicati rispetto a quella ottenuta applicando le due strategie di pulizia.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{confronto_cv_dup_pre_post.png}
+    \caption{Confronto tra le strategie di gestione dei duplicati in Cross-Validation per i tre modelli analizzati.}
     \label{fig:confronto_cv_dup_pre_post}
 \end{figure}
 
-Come si evince dalla Figura~\ref{fig:confronto_cv_dup_pre_post}, la valutazione sui dati non trattati (linea tratteggiata rossa) soffre di un evidente fenomeno di \emph{data leakage}. All'aumentare della percentuale di duplicati, l'accuratezza della Cross-Validation aumenta fittiziamente (visibile in particolare nei modelli più complessi come la SVM e le Reti Neurali). Questo accade perché le stesse osservazioni finiscono per essere presenti simultaneamente sia nei fold di addestramento che in quello di validazione, permettendo al modello di riconoscere pattern già visti anziché generalizzare su dati nuovi.
+Come si evince dalla Figura~\ref{fig:confronto_cv_dup_pre_post}, la valutazione sui dati non trattati (linea tratteggiata rossa) soffre di un evidente fenomeno di \emph{data leakage}: all'aumentare della percentuale di duplicati, l'accuratezza di Cross-Validation cresce fittiziamente, in modo particolarmente marcato per i modelli più complessi come SVM e Rete Neurale, poiché le stesse osservazioni finiscono per essere presenti simultaneamente nei fold di addestramento e di validazione. Al contrario, le curve post-rimozione e post-aggregazione risultano perfettamente piatte e sovrapposte al variare del livello di duplicazione iniziale, poiché entrambe le tecniche riconducono il training set all'esatta composizione della Baseline originale.
 
-Al contrario, le strategie di rimozione e aggregazione restituiscono stime affidabili e non distorte. Poiché entrambe le tecniche riescono a identificare e neutralizzare completamente le righe ridondanti — riconducendo il training set all'esatta composizione della Baseline originale (Tabella~\ref{tab:dedup_rows}) — le curve di accuratezza post-regolarizzazione risultano perfettamente piatte e costanti al variare del livello di duplicazione iniziale. Questo andamento dimostra matematicamente l'efficacia della pulizia e la necessità di gestire i duplicati \emph{prima} di qualsiasi fase di validazione.
+In conclusione, a differenza dei valori mancanti e dei dati sporchi, il rumore da duplicazione non richiede tecniche di regolarizzazione del modello, ma esclusivamente un intervento di pulizia a monte della procedura di validazione: la scelta tra rimozione semplice e aggregazione intelligente è quindi ininfluente in assenza di etichette discordanti, e dovrebbe orientarsi verso l'aggregazione intelligente solo negli scenari reali in cui i duplicati possano portare informazioni di etichetta contrastanti.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \subsection{Mitigazione dei dati sporchi}
 
