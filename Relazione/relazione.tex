@@ -71,7 +71,7 @@
         \vspace{1.5cm}
         
         % Logo dell'università
-        \begin{figure}[h!]
+        \begin{figure}[H]
             \centering
             \includegraphics[width=0.3\textwidth]{unimib.png} 
         \end{figure}
@@ -79,7 +79,7 @@
         \vspace{2cm}
 
         % Materia e Titolo
-        {\Large \textbf{Archittura Dati}} \\
+        {\Large \textbf{Architetture Dati}} \\
         \vspace{0.8cm}
         {\large \textbf{Valutazione dell'Impatto del Rumore sulla Predizione dei Modelli di Machine Learning}} \\ % <-- Chiusa parentesi qui
         \vspace{0.8cm}
@@ -147,7 +147,7 @@
 \section{Introduzione}
 % ======================================================================
 
-L'obiettivo del progetto è comprendere in che modo la presenza di rumore nei dati influenzi le prestazioni dei modelli di Machine Learning e individuare le strategie più efficaci per limitarne l'impatto. Il lavoro si è articolato nelle seguenti fasi, in linea con la proposta progettuale concordata:
+L'obiettivo del progetto è comprendere in che modo la presenza di rumore nei dati influenzi le prestazioni dei modelli di Machine Learning e individuare le strategie più efficaci per limitarne l'impatto. Il lavoro si è articolato nelle seguenti fasi:
 
 \begin{itemize}
     \item{scelta e analisi di un dataset adatto al problema di classificazione};
@@ -166,9 +166,9 @@ Il dominio applicativo scelto è quello medicale/di supporto alla diagnosi: si �
 \section{Descrizione del dataset}
 % ======================================================================
 
-Il dataset utilizzato è lo \textbf{UCI Heart Disease Dataset}, reso disponibile su GitHub\footnote{\url{https://raw.githubusercontent.com/Bicanic-Alen/Progetto_Archittura_Dati_2026/refs/heads/master/heart_disease_uci.csv}} e caricato in questo progetto da un repository GitHub del corso. Il dataset è composto da \textbf{920 istanze} e, nella sua forma originale, da \textbf{16 colonne}, tra cui variabili demografiche (età, sesso), cliniche (pressione a riposo, colesterolo, frequenza cardiaca massima, angina da sforzo, ecc.) e la variabile target \texttt{num}.
+Il dataset utilizzato è lo UCI Heart Disease Dataset, reso disponibile su GitHub\footnote{\url{https://raw.githubusercontent.com/Bicanic-Alen/Progetto_Archittura_Dati_2026/refs/heads/master/heart_disease_uci.csv}}. Il dataset è composto da 920 istanze e, nella sua forma originale, da 16 colonne, tra cui variabili demografiche (età, sesso), cliniche (pressione a riposo, colesterolo, frequenza cardiaca massima, angina da sforzo, ecc.) e la variabile target \texttt{num}.
 
-La variabile target originale è \textbf{multiclasse} (valori da 0 a 4, dove 0 indica assenza di malattia e i valori da 1 a 4 indicano livelli crescenti di gravità). La distribuzione originale delle classi è riportata in Tabella~\ref{tab:target_dist}.
+La variabile target originale è multiclasse (valori da 0 a 4, dove 0 indica assenza di malattia e i valori da 1 a 4 indicano livelli crescenti di gravità). La distribuzione originale delle classi è riportata in Tabella~\ref{tab:target_dist}.
 
 \begin{table}[H]
 \centering
@@ -250,7 +250,7 @@ Le variabili \texttt{fbs} (glicemia a digiuno) ed \texttt{exang} (angina indotta
 Le variabili categoriche \texttt{sex}, \texttt{cp}, \texttt{restecg}, \texttt{slope} e \texttt{thal} sono state trasformate tramite \emph{one-hot encoding} (con rimozione della prima categoria per evitare collinearità, \texttt{drop\_first=True}).
 
 \subsection{Gestione dei valori mancanti residui}
-Dopo l'encoding, le colonne numeriche che presentavano ancora valori mancanti (\texttt{trestbps}, \texttt{chol}, \texttt{thalch}, \texttt{oldpeak}, \texttt{ca}) sono state imputate con la \textbf{mediana} della rispettiva colonna. Questa scelta è stata preferita alla media in quanto più robusta rispetto agli outlier e permette di non perdere istanze, aspetto particolarmente rilevante data la dimensione limitata del dataset. Il conteggio dei valori mancanti per colonna, riscontrato dopo l'encoding, è riportato in Tabella~\ref{tab:missing}.
+Dopo l'encoding, le colonne numeriche che presentavano ancora valori mancanti (\texttt{trestbps}, \texttt{chol}, \texttt{thalch}, \texttt{oldpeak}, \texttt{ca}) sono state imputate con la mediana della rispettiva colonna. Questa scelta è stata preferita alla media in quanto più robusta rispetto agli outlier e permette di non perdere istanze, aspetto particolarmente rilevante data la dimensione limitata del dataset. Il conteggio dei valori mancanti per colonna, riscontrato dopo l'encoding, è riportato in Tabella~\ref{tab:missing}.
 
 \begin{table}[H]
 \centering
@@ -274,7 +274,7 @@ ca & 611 \\
 Le variabili numeriche sono state normalizzate/scalate (StandardScaler) per
 garantire che feature con scale di grandezza diverse (es. colesterolo vs età) non
 sbilanciassero il peso durante l'addestramento, passaggio essenziale soprattutto per la Rete
-Neurale.
+Neurale e SVM.
 
 % ======================================================================
 \newpage
@@ -286,7 +286,7 @@ Dopo il preprocessing è stata condotta un'analisi esplorativa per comprendere l
 \subsection{Distribuzione del target binario}
 Il grafico a barre della distribuzione del target binario mostra un discreto bilanciamento tra le due classi (assenza/presenza di malattia), condizione favorevole per l'addestramento dei modelli di classificazione.
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{distribuzione_target.png} 
             \caption{Distribuzione della variabile target binaria.}
@@ -297,14 +297,14 @@ Il grafico a barre della distribuzione del target binario mostra un discreto bil
 \subsection{Matrice di correlazione}
 La matrice di correlazione tra tutte le variabili numeriche del dataset permette di individuare eventuali relazioni lineari forti tra le feature e con il target.
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=1\textwidth]{matrice_correlazione.png} 
             \caption{Matrice di correlazione tra le variabili del dataset}
     \label{fig:matrice_correlazione}
 \end{figure}
 
-Dall'analisi esplorativa dei dati riportata nel notebook, è emerso attraverso la matrice di
+Dall'analisi esplorativa dei dati riportata, è emerso attraverso la matrice di
 correlazione che variabili come il tipo di dolore toracico (cp) e la frequenza cardiaca
 massima (thalach) mostrano una correlazione positiva con la presenza della malattia. Al
 contrario, variabili come oldpeak mostrano una correlazione negativa. Inoltre, i grafici di
@@ -316,7 +316,7 @@ prevalentemente nella fascia over-50.
 \subsection{Distribuzione delle variabili numeriche}
 Gli istogrammi delle variabili numeriche permettono di valutarne la forma distributiva e la presenza di eventuali asimmetrie o outlier.
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=1\textwidth]{istrogrammi_variabili.png} 
             \caption{Istogrammi delle variabili numeriche}
@@ -344,7 +344,7 @@ Sono stati addestrati e confrontati tre modelli di classificazione supervisionat
 
 \subsection{Decision Tree}
 
-È stato inizialmente addestrato un Decision Tree con criterio \emph{entropy} senza vincoli di profondità, ottenendo i seguenti risultati sul test set:
+È stato inizialmente addestrato il Decision Tree con criterio \emph{entropy} senza vincoli di profondità, ottenendo i seguenti risultati sul test set:
 
 \begin{table}[H]
 \centering
@@ -361,7 +361,7 @@ F1-score & 0.72 & 0.78 & 0.75 \\
 \label{tab:dt_baseline}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{cm_decision_tree_not_pruned_baseline.png} 
             \caption{Matrice di confusione -- Decision Tree (baseline)}
@@ -394,17 +394,17 @@ F1-score & 0.77 & 0.83 & 0.80 \\
 \label{tab:dt_pruned}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{cm_decision_tree_pruned_baseline.png} 
             \caption{Matrice di confusione -- Decision Tree Potato}
     \label{fig:cm_decision_tree_pruned_baseline}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{decision_tree_pruned_baseline.png} 
-            \caption{Matrice di confusione -- Decision Tree Potato}
+            \caption{Decision Tree Potato}
     \label{fig:decision_tree_pruned_baseline}
 \end{figure}
 La validazione tramite 5-fold cross-validation sul Decision Tree potato ha restituito un'accuracy media pari a \textbf{0.725}, coerente con quanto osservato sul singolo test set.
@@ -419,21 +419,21 @@ La validazione tramite 5-fold cross-validation sul Decision Tree potato ha resti
 \end{itemize}
 Il modello è stato addestrato per 100 epoche con \texttt{batch\_size=16} sui dati precedentemente standardizzati (\texttt{StandardScaler}), passaggio necessario poiché le reti neurali sono sensibili alla scala delle feature in input.
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{nn_baseline_accuracy.png} 
             \caption{Andamento dell'accuracy di training (Neural Network)}
     \label{fig:nn_baseline_accuracy}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{nn_baseline_loss.png} 
             \caption{Andamento della loss di training (Neural Network)}
     \label{fig:nn_baseline_loss}
 \end{figure}
 
-Sul test set, il modello ha ottenuto una \textbf{Test Accuracy di 0.8315} (Test Loss = 0.3813), con le seguenti metriche di classificazione:
+Sul test set, il modello ha ottenuto una Test Accuracy di 0.8315 (Test Loss = 0.3813), con le seguenti metriche di classificazione:
 
 \begin{table}[H]
 \centering
@@ -450,7 +450,7 @@ F1-score & 0.81 & 0.85 & 0.83 \\
 \label{tab:nn_baseline}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{cm_nn_baseline.png} 
             \caption{Matrice di confusione - Neural Network}
@@ -483,7 +483,7 @@ F1-score & 0.81 & 0.87 & 0.84 \\
 \label{tab:svm_baseline}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=0.7\textwidth]{cm_svm_baseline.png} 
             \caption{Matrice di confusione - SVM}
@@ -492,7 +492,7 @@ F1-score & 0.81 & 0.87 & 0.84 \\
 
 \subsection{Confronto tra i modelli di baseline}
 
-La Tabella~\ref{tab:confronto_baseline} riassume le prestazioni dei quattro modelli addestrati (Decision Tree non potato, Decision Tree potato, Neural Network, SVM) sul dataset originale, privo di rumore.
+La Tabella~\ref{tab:confronto_baseline} riassume le prestazioni dei modelli addestrati (Decision Tree non potato, Decision Tree potato, Neural Network, SVM) sul dataset originale, privo di rumore.
 
 \begin{table}[H]
 \centering
@@ -510,14 +510,14 @@ SVM & 0.842 & 0.85 & 0.84 & 0.84 \\
 \label{tab:confronto_baseline}
 \end{table}
 
-\begin{figure}[h!]
+\begin{figure}[H]
             \centering
             \includegraphics[width=1\textwidth]{confronto_accuracy_modelli_baseline.png} 
             \caption{Confronto dell’Accuracy tra i modelli di baseline}
     \label{fig:confronto_accuracy_modelli_baseline}
 \end{figure}
 
-La SVM con kernel RBF risulta il modello con le prestazioni migliori sul test set, seguita dalla rete neurale; il Decision Tree potato mostra un netto miglioramento rispetto alla versione non potata, a conferma dell'efficacia del pruning nel ridurre l'overfitting.
+La SVM con kernel RBF risulta il modello con le prestazioni migliori sul test set, seguita dalla rete neurale; il Decision Tree potato mostra un miglioramento rispetto alla versione non potata, a conferma dell'efficacia del pruning nel ridurre l'overfitting.
 
 % ======================================================================
 \newpage
@@ -809,13 +809,6 @@ dalla Cross-Validation nella sotto-sezione seguente.
 
 \subsubsection{Cross-Validation}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=1\textwidth]{cm_dup_livelli.jpg}
-    \caption{Confronto dell'Accuracy tra i modelli di baseline}
-    \label{fig:cm_dup_livelli}
-\end{figure}
-
 \begin{table}[H]
 \centering
 \begin{tabular}{lccc}
@@ -831,6 +824,13 @@ High (55\%) & 0.799 & 0.854 & 0.823 \\
 \caption{Accuracy media di CV (5-fold) al variare del livello di duplicazione (dati non ripuliti).}
 \label{tab:cv_dup_base}
 \end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{cv_duplicazione_overfitting.png}
+    \caption{Accuracy per livello di duplicazione (data leakage)}
+    \label{fig:cm_dup_livelli}
+\end{figure}
 
 A differenza delle altre tipologie di rumore, l'accuracy in cross-validation
 \textbf{aumenta} apparentemente con il livello di duplicazione. Questo risultato \`e
@@ -1398,8 +1398,8 @@ In conclusione, a differenza dei valori mancanti e dei dati sporchi, il rumore d
 Per contrastare l'effetto dei dati "sporchi" (rumore gaussiano e swap di valori binari), che si sono rivelati la tipologia di rumore più impattante, è stata adottata una pipeline di preprocessing robusto composta da:
 
 \begin{itemize}
-    \item \textbf{RobustScaler}: normalizzazione basata su mediana e range interquartile, meno sensibile agli outlier rispetto allo \texttt{StandardScaler} classico;
-    \item \textbf{PCA (Principal Component Analysis)}, mantenendo il numero minimo di componenti necessario a spiegare il \textbf{95\%} della varianza totale, con l'obiettivo di filtrare parte del rumore concentrato nelle componenti a bassa varianza;
+    \item RobustScaler: normalizzazione basata su mediana e range interquartile, meno sensibile agli outlier rispetto allo \texttt{StandardScaler} classico;
+    \item PCA (Principal Component Analysis), mantenendo il numero minimo di componenti necessario a spiegare il 95\% della varianza totale, con l'obiettivo di filtrare parte del rumore concentrato nelle componenti a bassa varianza;
     \item modelli regolarizzati (Decision Tree con \texttt{max\_depth=4}, \texttt{min\_samples\_split=20}, \texttt{min\_samples\_leaf=15}; SVM con $C=0.1$).
 \end{itemize}
 
@@ -1550,7 +1550,7 @@ di pulizia dei dati}
 Dall'osservazione visiva delle curve di degradazione emergono tre dinamiche chiave:
 
 \begin{itemize}
-    \item La Support Vector Machine domina i grafici, confermando visivamente la sua superiore stabilità trasversale rispetto agli altri modelli.
+    \item La Support Vector Machine si conferma il modello con le prestazioni più stabili, risultando  leggermente superiore alla Neural Network, ma più consistente rispetto agli altri algoritmi considerati.
     \item L'assenza di dati (NaN) e i duplicati presentano curve post-mitigazione piatte e controllate, a dimostrazione che le tecniche di imputazione (KNN/Iterative) e di pulizia neutralizzano quasi totalmente il problema.
     \item Il riquadro dei Dati Sporchi è l'unico a mostrare un crollo ineliminabile delle curve (nello scenario \textit{High}), confermandosi visivamente come l'ostacolo più arduo da filtrare persino per la pipeline robusta.
 \end{itemize}
