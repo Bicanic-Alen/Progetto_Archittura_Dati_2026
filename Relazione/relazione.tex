@@ -250,7 +250,7 @@ Le variabili \texttt{fbs} (glicemia a digiuno) ed \texttt{exang} (angina indotta
 Le variabili categoriche \texttt{sex}, \texttt{cp}, \texttt{restecg}, \texttt{slope} e \texttt{thal} sono state trasformate tramite \emph{one-hot encoding} (con rimozione della prima categoria per evitare collinearità, \texttt{drop\_first=True}).
 
 \subsection{Gestione dei valori mancanti residui}
-Dopo l'encoding, le colonne numeriche che presentavano ancora valori mancanti (\texttt{trestbps}, \texttt{chol}, \texttt{thalch}, \texttt{oldpeak}, \texttt{ca}) sono state imputate con la mediana della rispettiva colonna. Questa scelta è stata preferita alla media in quanto più robusta rispetto agli outlier e permette di non perdere istanze, aspetto particolarmente rilevante data la dimensione limitata del dataset. Il conteggio dei valori mancanti per colonna, riscontrato dopo l'encoding, è riportato in Tabella~\ref{tab:missing}.
+Dopo l'encoding, le colonne numeriche che presentavano ancora valori mancanti (\texttt{trestbps}, \texttt{chol}, \texttt{thalach}, \texttt{oldpeak}, \texttt{ca}) sono state imputate con la mediana della rispettiva colonna. Questa scelta è stata preferita alla media in quanto più robusta rispetto agli outlier e permette di non perdere istanze, aspetto particolarmente rilevante data la dimensione limitata del dataset. Il conteggio dei valori mancanti per colonna, riscontrato dopo l'encoding, è riportato in Tabella~\ref{tab:missing}.
 
 \begin{table}[H]
 \centering
@@ -260,7 +260,7 @@ Dopo l'encoding, le colonne numeriche che presentavano ancora valori mancanti (\
 \midrule
 trestbps & 59 \\
 chol & 30 \\
-thalch & 55 \\
+thalach & 55 \\
 oldpeak & 62 \\
 ca & 611 \\
 \bottomrule
